@@ -13,10 +13,10 @@ license = "Apache-2.0"
 
 [dependencies]
 cxx = "1.0"
+structopt = "0.3"
 
 [build-dependencies]
 cxx-build = "1.0"
 
 [dev-dependencies]
-structopt = "0.3"
 byte-slice-cast = "1.0"
