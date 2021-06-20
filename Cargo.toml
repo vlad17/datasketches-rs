@@ -19,5 +19,14 @@ structopt = "0.3"
 cxx-build = "1.0"
 
 [dev-dependencies]
+amadeus-streaming = "0.4"
 byte-slice-cast = "1.0"
 criterion = "0.3"
+hyperloglogplus = { version = "0.4", features = ["const-loop"] }
+ordered-float = "2.5"
+probabilistic-collections = "0.7"
+probably = "0.3"
+
+[[bench]]
+name = "speed"
+harness = false
