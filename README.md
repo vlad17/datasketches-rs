@@ -8,11 +8,13 @@ TODO: sort | uniq -c example
 
 ## Installation
 
-Assumes a modern Rust `cargo` is installed.
+Assumes a modern Rust `cargo` is installed. The command line tool `dsrs` can be installed with:
 
 ```
 cargo install dsrs
 ```
+
+The library may be used as a regular Rust dependency by adding it to your `Cargo.toml` file.
 
 ## Embedded C++ Library
 
