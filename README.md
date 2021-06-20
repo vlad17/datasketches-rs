@@ -2,11 +2,11 @@
 
 A Rust binding for the [Apache DataSketches](https://datasketches.apache.org/) library.
 
-At this point, this package only wraps the count-distinct CPC sketch and provides a command-line tool, `rsds`, 
+At this point, this package only wraps the count-distinct CPC sketch and provides a command-line tool, `rsds`, for approximate `sort | uniq -c` functionality.
 
 ## Installation
 
-Assumes Rust `cargo` is installed.
+Assumes a modern Rust `cargo` is installed.
 
 ```
 cargo install rsds
@@ -32,3 +32,5 @@ find ../datasketches-cpp/ -name "*.h" -or -name "*.hpp" | \
 # and the license info too
 cp ../datasketches-cpp/{NOTICE,LICENSE} datasketches-cpp/
 ```
+
+This is all only possible thanks to the excellent [dtolnay/cxx](https://github.com/dtolnay/cxx) library!
