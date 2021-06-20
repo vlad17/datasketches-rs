@@ -29,7 +29,7 @@ impl CpcSketch {
     /// Create a CPC sketch representing the empty set.
     pub fn new() -> Self {
         CpcSketch {
-            inner: ffi::new_opaque_cpc_sketch()
+            inner: ffi::new_opaque_cpc_sketch(),
         }
     }
 
@@ -56,13 +56,12 @@ impl CpcSketch {
 
     pub fn deserialize(buf: &[u8]) -> Self {
         CpcSketch {
-            inner: ffi::deserialize_opaque_cpc_sketch(buf)
+            inner: ffi::deserialize_opaque_cpc_sketch(buf),
         }
     }
 }
 
-pub struct CpcUnion {
-}
+pub struct CpcUnion {}
 
 #[cfg(test)]
 mod tests {
@@ -86,6 +85,4 @@ mod tests {
             assert!((lb..ub).contains(&est));
         }
     }
-
-    
 }

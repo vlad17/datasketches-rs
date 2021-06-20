@@ -4,7 +4,7 @@ fn main() {
     let datasketches = PathBuf::from("datasketches-cpp");
     let src = PathBuf::from("src");
     let mut bridge = cxx_build::bridge(src.join("bridge.rs"));
-    
+
     assert!(bridge.is_flag_supported("-std=c++11").expect("supported"));
     bridge
         .file(datasketches.join("bridge.cpp"))
