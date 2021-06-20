@@ -13,6 +13,7 @@ class OpaqueCpcSketch {
 public:
   double estimate() const;
   void update(rust::Slice<const uint8_t> buf);
+  void update_u64(uint64_t value);
   std::unique_ptr<std::vector<uint8_t>> serialize() const;
 private:
   OpaqueCpcSketch();

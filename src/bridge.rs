@@ -13,6 +13,7 @@ pub(crate) mod ffi {
         pub(crate) fn deserialize_opaque_cpc_sketch(buf: &[u8]) -> UniquePtr<OpaqueCpcSketch>;
         pub(crate) fn estimate(self: &OpaqueCpcSketch) -> f64;
         pub(crate) fn update(self: Pin<&mut OpaqueCpcSketch>, buf: &[u8]);
+        pub(crate) fn update_u64(self: Pin<&mut OpaqueCpcSketch>, value: u64);
         pub(crate) fn serialize(self: &OpaqueCpcSketch) -> UniquePtr<CxxVector<u8>>;
 
         pub(crate) type OpaqueCpcUnion;

@@ -49,6 +49,15 @@ impl CpcSketch {
         self.inner.pin_mut().update(value)
     }
 
+    /// Observe a new `u64`. If the native-endian byte ordered bytes
+    /// are equal to any other value seen by `update()`, this will be considered
+    /// equal. If you are intending to use serialized sketches across
+    /// platforms with different endianness, make sure to convert this
+    /// `value` to network order first.
+    pub fn update_u64(&mut self, value: u64) {
+        self.inner.pin_mut().update_u64(value)
+    }
+
     pub fn serialize(&self) -> impl AsRef<[u8]> {
         struct UPtrVec(cxx::UniquePtr<cxx::CxxVector<u8>>);
         impl AsRef<[u8]> for UPtrVec {
@@ -105,7 +114,9 @@ mod tests {
         for _ in 0..10 {
             for key in 0u64..n {
                 slice[0] = key;
-                cpc.update(slice.as_byte_slice())
+                // updates should be equal
+                cpc.update(slice.as_byte_slice());
+                cpc.update_u64(key);
             }
             let est = cpc.estimate();
             let lb = n as f64 * 0.95;
@@ -140,7 +151,8 @@ mod tests {
             let mut cpc = CpcSketch::new();
             for key in 0u64..n {
                 slice[0] = key;
-                cpc.update(slice.as_byte_slice())
+                cpc.update(slice.as_byte_slice());
+                cpc.update_u64(key);
             }
             union.merge(cpc);
             let est = union.sketch().estimate();
@@ -160,7 +172,8 @@ mod tests {
             let mut cpc = CpcSketch::new();
             for key in 0u64..n {
                 slice[0] = key + (i % nrepeats) * n;
-                cpc.update(slice.as_byte_slice())
+                cpc.update(slice.as_byte_slice());
+                cpc.update_u64(key);
             }
             union.merge(cpc);
             let est = union.sketch().estimate();

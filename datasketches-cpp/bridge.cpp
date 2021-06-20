@@ -26,7 +26,11 @@ double OpaqueCpcSketch::estimate() const {
 }
 
 void OpaqueCpcSketch::update(rust::Slice<const uint8_t> buf) {
-  return this->inner_.update(buf.data(), buf.size());
+  this->inner_.update(buf.data(), buf.size());
+}
+
+void OpaqueCpcSketch::update_u64(uint64_t value) {
+  this->inner_.update(value);
 }
 
 std::unique_ptr<std::vector<uint8_t>> OpaqueCpcSketch::serialize() const {
