@@ -1,4 +1,9 @@
 //! Wrapper types for bound CXX opaque types.
+//!
+//! The only required overhead from the C++ code is a pointer indirection,
+//! to an opaque C++ type (and the corresponding heap allocation) and
+//! lack of inlining, though this may be improved with cross-language
+//! LTO, see dtolnay/cxx#371.
 
 use cxx;
 
@@ -28,7 +33,7 @@ pub struct CpcSketch {
 impl CpcSketch {
     /// Create a CPC sketch representing the empty set.
     pub fn new() -> Self {
-        CpcSketch {
+        Self {
             inner: ffi::new_opaque_cpc_sketch(),
         }
     }
@@ -55,13 +60,36 @@ impl CpcSketch {
     }
 
     pub fn deserialize(buf: &[u8]) -> Self {
-        CpcSketch {
+        Self {
             inner: ffi::deserialize_opaque_cpc_sketch(buf),
         }
     }
 }
 
-pub struct CpcUnion {}
+pub struct CpcUnion {
+    inner: cxx::UniquePtr<ffi::OpaqueCpcUnion>,
+}
+
+impl CpcUnion {
+    /// Create a CPC union over nothing, which corresponds to the
+    /// empty set.
+    pub fn new() -> Self {
+        Self {
+            inner: ffi::new_opaque_cpc_union(),
+        }
+    }
+
+    pub fn merge(&mut self, sketch: CpcSketch) {
+        self.inner.pin_mut().merge(sketch.inner)
+    }
+
+    /// Retrieve the current unioned sketch as a copy.
+    pub fn sketch(&self) -> CpcSketch {
+        CpcSketch {
+            inner: self.inner.sketch(),
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -80,8 +108,64 @@ mod tests {
                 cpc.update(slice.as_byte_slice())
             }
             let est = cpc.estimate();
-            let lb = (n as f64) * 0.95;
-            let ub = (n as f64) * 1.05;
+            let lb = n as f64 * 0.95;
+            let ub = n as f64 * 1.05;
+            assert!((lb..ub).contains(&est));
+        }
+    }
+
+    #[test]
+    fn cpc_empty() {
+        let cpc = CpcSketch::new();
+        assert_eq!(cpc.estimate(), 0.0);
+    }
+
+    #[test]
+    fn union_empty() {
+        let cpc = CpcUnion::new().sketch();
+        assert_eq!(cpc.estimate(), 0.0);
+        let mut union = CpcUnion::new();
+        union.merge(cpc);
+        union.merge(CpcSketch::new());
+        let cpc = union.sketch();
+        assert_eq!(cpc.estimate(), 0.0);
+    }
+
+    #[test]
+    fn basic_union_overlap() {
+        let mut slice = [0u64];
+        let n = 100 * 1000;
+        let mut union = CpcUnion::new();
+        for _ in 0..10 {
+            let mut cpc = CpcSketch::new();
+            for key in 0u64..n {
+                slice[0] = key;
+                cpc.update(slice.as_byte_slice())
+            }
+            union.merge(cpc);
+            let est = union.sketch().estimate();
+            let lb = n as f64 * 0.95;
+            let ub = n as f64 * 1.05;
+            assert!((lb..ub).contains(&est));
+        }
+    }
+
+    #[test]
+    fn basic_union_distinct() {
+        let mut slice = [0u64];
+        let n = 100 * 1000;
+        let mut union = CpcUnion::new();
+        let nrepeats = 6;
+        for i in 0..10 {
+            let mut cpc = CpcSketch::new();
+            for key in 0u64..n {
+                slice[0] = key + (i % nrepeats) * n;
+                cpc.update(slice.as_byte_slice())
+            }
+            union.merge(cpc);
+            let est = union.sketch().estimate();
+            let lb = (n * nrepeats.min(i + 1)) as f64 * 0.95;
+            let ub = (n * nrepeats.min(i + 1)) as f64 * 1.05;
             assert!((lb..ub).contains(&est));
         }
     }
