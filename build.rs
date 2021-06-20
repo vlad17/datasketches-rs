@@ -12,9 +12,5 @@ fn main() {
         .flag_if_supported("-std=c++11")
         .cpp_link_stdlib("stdc++")
         .static_flag(true)
-        // .warnings(false)
         .compile("libdatasketches.a");
-    println!("cargo:rerun-if-changed=src/main.rs");
-    println!("cargo:rerun-if-changed=src/blobstore.cc");
-    println!("cargo:rerun-if-changed=include/blobstore.h");
 }

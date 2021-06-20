@@ -1,15 +1,15 @@
-# Rust DataSketches
+# DataSketches in Rust
 
 A Rust binding for the [Apache DataSketches](https://datasketches.apache.org/) library.
 
-At this point, this package only wraps the count-distinct CPC sketch and provides a command-line tool, `rsds`, for approximate `sort | uniq -c` functionality.
+At this point, this package only wraps the count-distinct CPC sketch and provides a command-line tool, `dsrs`, for approximate `sort | uniq -c` functionality.
 
 ## Installation
 
 Assumes a modern Rust `cargo` is installed.
 
 ```
-cargo install rsds
+cargo install dsrs
 ```
 
 ## Embedded C++ Library

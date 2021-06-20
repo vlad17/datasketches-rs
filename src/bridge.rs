@@ -5,7 +5,7 @@
 #[cxx::bridge]
 pub(crate) mod ffi {
     unsafe extern "C++" {
-        include!("rsds/datasketches-cpp/bridge.hpp");
+        include!("dsrs/datasketches-cpp/bridge.hpp");
 
         pub(crate) type OpaqueCpcSketch;
 
