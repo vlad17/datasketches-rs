@@ -69,6 +69,9 @@ impl CpcSketch {
     }
 
     pub fn deserialize(buf: &[u8]) -> Self {
+        // TODO: this could be friendlier, it currently terminates
+        // the program no bad deserialization, and instead can be a
+        // Result.
         Self {
             inner: ffi::deserialize_opaque_cpc_sketch(buf),
         }
@@ -106,6 +109,26 @@ mod tests {
 
     use super::*;
 
+    fn check_cycle(s: &CpcSketch) {
+        let est = s.estimate();
+        let bytes = s.serialize();
+        let cpy = CpcSketch::deserialize(bytes.as_ref());
+        let cpy2 = CpcSketch::deserialize(bytes.as_ref());
+        let cpy3 = CpcSketch::deserialize(bytes.as_ref());
+        assert_eq!(est, cpy.estimate());
+        assert_eq!(est, cpy2.estimate());
+        assert_eq!(est, cpy3.estimate());
+        /*
+        The below breaks -- sketches bug?
+
+        let mut union = CpcUnion::new();
+        union.merge(cpy);
+        union.merge(cpy2);
+        union.merge(cpy3);
+        assert_eq!(est, union.sketch().estimate());
+        */
+    }
+
     #[test]
     fn basic_count_distinct() {
         let mut slice = [0u64];
@@ -118,6 +141,7 @@ mod tests {
                 cpc.update(slice.as_byte_slice());
                 cpc.update_u64(key);
             }
+            check_cycle(&cpc);
             let est = cpc.estimate();
             let lb = n as f64 * 0.95;
             let ub = n as f64 * 1.05;
@@ -129,6 +153,7 @@ mod tests {
     fn cpc_empty() {
         let cpc = CpcSketch::new();
         assert_eq!(cpc.estimate(), 0.0);
+        check_cycle(&cpc);
     }
 
     #[test]
@@ -155,7 +180,9 @@ mod tests {
                 cpc.update_u64(key);
             }
             union.merge(cpc);
-            let est = union.sketch().estimate();
+            let merged = union.sketch();
+            let est = merged.estimate();
+            check_cycle(&merged);
             let lb = n as f64 * 0.95;
             let ub = n as f64 * 1.05;
             assert!((lb..ub).contains(&est));
@@ -176,7 +203,9 @@ mod tests {
                 cpc.update_u64(key);
             }
             union.merge(cpc);
-            let est = union.sketch().estimate();
+            let merged = union.sketch();
+            let est = merged.estimate();
+            check_cycle(&merged);
             let lb = (n * nrepeats.min(i + 1)) as f64 * 0.95;
             let ub = (n * nrepeats.min(i + 1)) as f64 * 1.05;
             assert!((lb..ub).contains(&est));

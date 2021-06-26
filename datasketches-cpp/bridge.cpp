@@ -39,6 +39,7 @@ std::unique_ptr<std::vector<uint8_t>> OpaqueCpcSketch::serialize() const {
   std::stringstream s{};
   auto start = s.tellg();
   this->inner_.serialize(s);
+  s.seekg(0, std::ios::end);
   auto stop = s.tellg();
 
   std::vector<uint8_t> v(std::size_t(stop-start));

@@ -1,6 +1,6 @@
 [package]
 name = "dsrs"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Vladimir Feinberg <vladimir.feinberg@gmail.com>"]
 edition = "2018"
 description = "Rusty wrapper for Apache DataSketches"
@@ -14,11 +14,15 @@ license = "Apache-2.0"
 [dependencies]
 cxx = "1.0"
 structopt = "0.3"
+bstr = "0.2"
+memchr = "2.3"
+base64 = "0.13"
 
 [build-dependencies]
 cxx-build = "1.0"
 
 [dev-dependencies]
+proptest = "1.0"
 amadeus-streaming = "0.4"
 byte-slice-cast = "1.0"
 criterion = "0.3"
@@ -26,6 +30,7 @@ hyperloglogplus = { version = "0.4", features = ["const-loop"] }
 ordered-float = "2.5"
 probabilistic-collections = "0.7"
 probably = "0.3"
+assert_cmd = "1.0"
 
 [[bench]]
 name = "speed"

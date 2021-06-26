@@ -2,9 +2,34 @@
 
 A Rust binding for the [Apache DataSketches](https://datasketches.apache.org/) library.
 
-At this point, this package only wraps the count-distinct CPC sketch and provides a command-line tool, `dsrs`, for approximate `sort | uniq -c` functionality.
+At this point, this package only wraps the count-distinct CPC sketch and provides a command-line tool, `dsrs`, for approximate `sort -u | wc -l` functionality. Examples require [GNU Parallel](https://www.gnu.org/software/parallel). The command-line part probably doesn't work on Windows.
 
-TODO: sort | uniq -c example
+```bash
+cat <<"EOF" | dsrs
+line 1
+line 2
+line 1
+line 3
+line 3
+line 3
+EOF
+# 3
+
+cat <<"EOF" | dsrs --key
+a 1
+a 2
+b 1
+b 2
+a 1
+a 3
+EOF
+# b 2
+# a 3
+```
+
+```bash
+TODO: some really fast keyed approx count in parallel, compare memory and time
+```
 
 ## Installation
 
