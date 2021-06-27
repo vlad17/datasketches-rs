@@ -2,29 +2,23 @@
 
 A Rust binding for the [Apache DataSketches](https://datasketches.apache.org/) library.
 
-At this point, this package only wraps the count-distinct CPC sketch and provides a command-line tool, `dsrs`, for approximate `sort -u | wc -l` functionality. Examples require [GNU Parallel](https://www.gnu.org/software/parallel). The command-line part probably doesn't work on Windows.
+At this point, this package only wraps the count-distinct CPC sketch and provides a command-line tool, `dsrs`, for approximate distinct line-counting functionality (I personally find this useful when collecting statistics from logs). Examples require [GNU Parallel](https://www.gnu.org/software/parallel). The command-line part probably doesn't work on Windows.
 
 ```bash
-cat <<"EOF" | dsrs
-line 1
-line 2
-line 1
-line 3
-line 3
-line 3
-EOF
-# 3
+(seq $((100 * 1000 * 1000)) && seq $((100 * 1000 * 1000))) | \
+  /usr/bin/time -f "%e sec %M KB" dsrs
+102055590
+5.22 sec 4288 KB
 
-cat <<"EOF" | dsrs --key
-a 1
-a 2
-b 1
-b 2
-a 1
-a 3
-EOF
-# b 2
-# a 3
+(seq $((100 * 1000 * 1000)) && seq $((100 * 1000 * 1000))) | \
+  /usr/bin/time -f "%e sec %M KB" sort -u | wc -l
+438.66 sec 12880 KB
+100000000
+
+seq $((100 * 1000 * 1000)) && seq $((100 * 1000 * 1000))) | \
+  /usr/bin/time -f "%e sec %M KB" awk '{a[$0]=1}END{print length(a)}'
+100000000
+39.28 sec 898240 KB
 ```
 
 ```bash
