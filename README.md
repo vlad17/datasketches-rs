@@ -15,7 +15,7 @@ At this point, this package only wraps the count-distinct CPC sketch and provide
 438.66 sec 12880 KB
 100000000
 
-seq $((100 * 1000 * 1000)) && seq $((100 * 1000 * 1000))) | \
+(seq $((100 * 1000 * 1000)) && seq $((100 * 1000 * 1000))) | \
   /usr/bin/time -f "%e sec %M KB" awk '{a[$0]=1}END{print length(a)}'
 100000000
 39.28 sec 898240 KB
