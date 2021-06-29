@@ -9,7 +9,7 @@ use base64;
 use memchr;
 
 use crate::stream_reducer::LineReducer;
-use crate::CpcSketch;
+use crate::{CpcSketch, CpcUnion};
 
 pub struct Counter {
     sketch: CpcSketch,
@@ -80,4 +80,69 @@ impl KeyedCounter {
     }
 }
 
-// TODO: KeyedMerger -- reads the
+pub struct Merger {
+    sketch: CpcUnion,
+}
+
+impl Default for Merger {
+    fn default() -> Self {
+        Self {
+            sketch: CpcUnion::new(),
+        }
+    }
+}
+
+impl Merger {
+    pub fn counter(&self) -> Counter {
+        let sketch = self.sketch.sketch();
+        Counter { sketch }
+    }
+}
+
+impl LineReducer for Merger {
+    fn read_line(&mut self, line: &[u8]) {
+        let line = str::from_utf8(line).unwrap_or_else(|e| {
+            panic!(
+                "invalid UTF-8: {}\n{}\n{:?}",
+                e,
+                String::from_utf8_lossy(line),
+                line
+            )
+        });
+        let counter = Counter::deserialize(line).expect("properly deserialized counter");
+        self.sketch.merge(counter.sketch);
+    }
+}
+
+#[derive(Default)]
+pub struct KeyedMerger {
+    sketches: HashMap<Vec<u8>, Merger>,
+}
+
+impl LineReducer for KeyedMerger {
+    fn read_line(&mut self, line: &[u8]) {
+        let space_ix = memchr::memchr(b' ', line).unwrap_or_else(|| {
+            panic!(
+                "line missing space: '{}'",
+                str::from_utf8(line).unwrap_or("BAD UTF-8")
+            )
+        });
+        let (key, value) = (&line[0..space_ix], &line[space_ix + 1..]);
+        if !self.sketches.contains_key(key) {
+            self.sketches.insert(key.to_owned(), Merger::default());
+        }
+        self.sketches
+            .get_mut(key)
+            .expect("key present")
+            .read_line(value);
+    }
+}
+
+impl KeyedMerger {
+    /// Returns an iterator over all contained keys and their sketches.
+    pub fn state(&self) -> impl Iterator<Item = (&[u8], Counter)> {
+        self.sketches
+            .iter()
+            .map(|(key, mrgr)| (key.as_ref(), mrgr.counter()))
+    }
+}

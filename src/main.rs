@@ -2,9 +2,10 @@
 //! on the command line.
 
 use std::io;
+use std::iter;
 use std::str;
 
-use dsrs::counters::{Counter, KeyedCounter};
+use dsrs::counters::{Counter, KeyedCounter, KeyedMerger, Merger};
 use dsrs::stream_reducer::reduce_stream;
 use structopt::StructOpt;
 
@@ -128,24 +129,28 @@ struct Opt {
 fn main() {
     let opt = Opt::from_args();
 
-    if opt.raw {
-        panic!("--raw not yet supported");
-    }
-
-    if opt.merge {
-        panic!("--merge not yet supported");
-    }
-
-    match opt.key {
-        true => {
+    match (opt.key, opt.merge) {
+        (true, false) => {
             let reduced =
                 reduce_stream(io::stdin().lock(), KeyedCounter::default()).expect("no io error");
             print_dict(reduced.state(), opt.raw)
         }
-        false => {
+        (false, false) => {
             let reduced =
                 reduce_stream(io::stdin().lock(), Counter::default()).expect("no io error");
             print_single(&reduced, opt.raw);
+        }
+        (true, true) => {
+            let reduced =
+                reduce_stream(io::stdin().lock(), KeyedMerger::default()).expect("no io error");
+            for (key, ctr) in reduced.state() {
+                print_dict(iter::once((key, &ctr)), opt.raw)
+            }
+        }
+        (false, true) => {
+            let reduced =
+                reduce_stream(io::stdin().lock(), Merger::default()).expect("no io error");
+            print_single(&reduced.counter(), opt.raw)
         }
     }
 }
@@ -158,8 +163,12 @@ fn print_dict<'a>(it: impl Iterator<Item = (&'a [u8], &'a Counter)>, raw: bool) 
     }
 }
 
-fn print_single(c: &Counter, _raw: bool) {
-    println!("{}", c.estimate().round());
+fn print_single(c: &Counter, raw: bool) {
+    if raw {
+        println!("{}", c.serialize());
+    } else {
+        println!("{}", c.estimate().round());
+    }
 }
 
 #[cfg(test)]
@@ -169,6 +178,29 @@ mod tests {
     use std::str;
 
     use assert_cmd;
+    use itertools::Itertools;
+
+    fn sort_lines(mut stdout: Vec<u8>) -> Vec<u8> {
+        let mut lines: Vec<_> = stdout
+            .split(|c| *c == b'\n')
+            .map(|s| s.to_owned())
+            .collect();
+        lines.sort_unstable();
+        lines.rotate_left(1); // final newline to back
+        lines.join(&b'\n')
+    }
+
+    fn communicate(stdin: Vec<u8>, dsrs_flags: &[&str]) -> Vec<u8> {
+        assert_cmd::Command::cargo_bin(env!("CARGO_PKG_NAME"))
+            .expect("command created")
+            .args(dsrs_flags)
+            .write_stdin(stdin)
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone()
+    }
 
     /// Asserts that the outputs of dsrs and unix tools when
     /// fed the input from datagen are equal.
@@ -180,36 +212,85 @@ mod tests {
             .expect("datagen process successful");
         assert!(out.stderr.is_empty());
         let stdin = out.stdout;
-        let dsrs_stdout = assert_cmd::Command::cargo_bin(env!("CARGO_PKG_NAME"))
-            .expect("command created")
-            .args(dsrs_flags)
-            .write_stdin(stdin)
-            .assert()
-            .success()
-            .get_output()
-            .stdout
-            .clone();
+        let dsrs_stdout = communicate(stdin.clone(), dsrs_flags);
         let out = process::Command::new("/bin/bash")
             .arg("-c")
             .arg(format!("({}) | ({})", datagen, unix))
             .output()
             .expect("unix process successful");
         assert!(out.stderr.is_empty());
-        let mut lines: Vec<_> = dsrs_stdout
-            .split(|c| *c == b'\n')
-            .map(|s| s.to_owned())
-            .collect();
-        lines.sort_unstable();
-        lines.rotate_left(1); // final newline to back
-        let dsrs_stdout = lines.join(&b'\n');
+        let dsrs_stdout = sort_lines(dsrs_stdout);
         let unix_stdout = out.stdout;
         assert_eq!(
             &unix_stdout,
             &dsrs_stdout,
-            "unix:\n{}\ndsrs:\n{}",
+            "\nunix:\n{}\ndsrs:\n{}",
             str::from_utf8(&unix_stdout).expect("valid UTF-8"),
             str::from_utf8(&dsrs_stdout).expect("valid UTF-8")
         );
+
+        // to check merge, split stdin lines into thirds two different
+        // ways (modulo and simply cutting it up)
+        // result should still be the same
+
+        let groups = stdin
+            .split(|c| *c == b'\n')
+            .enumerate()
+            .into_group_map_by(|(i, _)| i % 3)
+            .into_iter()
+            .map(|(_, v)| {
+                v.into_iter()
+                    .map(|(_, vv)| vv)
+                    .collect::<Vec<_>>()
+                    .join(&b'\n')
+            })
+            .collect();
+        let modulo_stdout = reduce_with_merge(groups, dsrs_flags);
+        assert_eq!(
+            &modulo_stdout,
+            &dsrs_stdout,
+            "\nmodulo:\n{}\ndsrs:\n{}",
+            str::from_utf8(&modulo_stdout).expect("valid UTF-8"),
+            str::from_utf8(&dsrs_stdout).expect("valid UTF-8")
+        );
+
+        let nlines = stdin.split(|c| *c == b'\n').count() - 1;
+        let groups: Vec<_> = stdin
+            .split(|c| *c == b'\n')
+            .enumerate()
+            .into_group_map_by(|(i, _)| (i * 2) / nlines)
+            .into_iter()
+            .map(|(i, v)| {
+                v.into_iter()
+                    .map(|(_, vv)| vv)
+                    .collect::<Vec<_>>()
+                    .join(&b'\n')
+            })
+            .collect();
+        let chunked_stdout = reduce_with_merge(groups, dsrs_flags);
+        assert_eq!(
+            &chunked_stdout,
+            &dsrs_stdout,
+            "\nchunked:\n{}\ndsrs:\n{}",
+            str::from_utf8(&chunked_stdout).expect("valid UTF-8"),
+            str::from_utf8(&dsrs_stdout).expect("valid UTF-8")
+        );
+    }
+
+    fn reduce_with_merge(groups: Vec<Vec<u8>>, dsrs_flags: &[&str]) -> Vec<u8> {
+        let raw: Vec<_> = groups
+            .into_iter()
+            .map(|stdin| {
+                let mut flags = dsrs_flags.to_vec();
+                flags.push("--raw");
+                communicate(stdin, &flags)
+            })
+            .flatten()
+            .collect();
+        let mut flags = dsrs_flags.to_vec();
+        flags.push("--merge");
+        let stdout = communicate(raw, &flags);
+        sort_lines(stdout)
     }
 
     const UNIX_COUNT_DISTINCT: &'static str = "sort --unique | wc -l";
