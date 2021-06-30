@@ -180,7 +180,7 @@ mod tests {
     use assert_cmd;
     use itertools::Itertools;
 
-    fn sort_lines(mut stdout: Vec<u8>) -> Vec<u8> {
+    fn sort_lines(stdout: Vec<u8>) -> Vec<u8> {
         let mut lines: Vec<_> = stdout
             .split(|c| *c == b'\n')
             .map(|s| s.to_owned())
@@ -204,7 +204,7 @@ mod tests {
 
     /// Asserts that the outputs of dsrs and unix tools when
     /// fed the input from datagen are equal.
-    fn validate_equal(datagen: &str, dsrs_flags: &[&str], unix: &str) {
+    fn validate_equal(datagen: &str, keyed: bool, unix: &str) {
         let out = process::Command::new("/bin/bash")
             .arg("-c")
             .arg(datagen)
@@ -212,7 +212,7 @@ mod tests {
             .expect("datagen process successful");
         assert!(out.stderr.is_empty());
         let stdin = out.stdout;
-        let dsrs_stdout = communicate(stdin.clone(), dsrs_flags);
+        let dsrs_stdout = communicate(stdin.clone(), if keyed { &["--key"] } else { &[] });
         let out = process::Command::new("/bin/bash")
             .arg("-c")
             .arg(format!("({}) | ({})", datagen, unix))
@@ -245,7 +245,7 @@ mod tests {
                     .join(&b'\n')
             })
             .collect();
-        let modulo_stdout = reduce_with_merge(groups, dsrs_flags);
+        let modulo_stdout = reduce_with_merge(groups, keyed);
         assert_eq!(
             &modulo_stdout,
             &dsrs_stdout,
@@ -260,14 +260,14 @@ mod tests {
             .enumerate()
             .into_group_map_by(|(i, _)| (i * 2) / nlines)
             .into_iter()
-            .map(|(i, v)| {
+            .map(|(_, v)| {
                 v.into_iter()
                     .map(|(_, vv)| vv)
                     .collect::<Vec<_>>()
                     .join(&b'\n')
             })
             .collect();
-        let chunked_stdout = reduce_with_merge(groups, dsrs_flags);
+        let chunked_stdout = reduce_with_merge(groups, keyed);
         assert_eq!(
             &chunked_stdout,
             &dsrs_stdout,
@@ -277,19 +277,25 @@ mod tests {
         );
     }
 
-    fn reduce_with_merge(groups: Vec<Vec<u8>>, dsrs_flags: &[&str]) -> Vec<u8> {
+    fn reduce_with_merge(groups: Vec<Vec<u8>>, keyed: bool) -> Vec<u8> {
         let raw: Vec<_> = groups
             .into_iter()
             .map(|stdin| {
-                let mut flags = dsrs_flags.to_vec();
-                flags.push("--raw");
-                communicate(stdin, &flags)
+                let flags: &[&str] = if keyed {
+                    &["--key", "--raw"]
+                } else {
+                    &["--raw"]
+                };
+                communicate(stdin, flags)
             })
             .flatten()
             .collect();
-        let mut flags = dsrs_flags.to_vec();
-        flags.push("--merge");
-        let stdout = communicate(raw, &flags);
+        let flags: &[&str] = if keyed {
+            &["--key", "--merge"]
+        } else {
+            &["--merge"]
+        };
+        let stdout = communicate(raw, flags);
         sort_lines(stdout)
     }
 
@@ -297,22 +303,22 @@ mod tests {
 
     #[test]
     fn unique_lines() {
-        validate_equal("seq 100", &[], UNIX_COUNT_DISTINCT)
+        validate_equal("seq 100", false, UNIX_COUNT_DISTINCT)
     }
 
     #[test]
     fn equally_dup_lines() {
-        validate_equal("seq 100 && seq 100 && seq 100", &[], UNIX_COUNT_DISTINCT)
+        validate_equal("seq 100 && seq 100 && seq 100", false, UNIX_COUNT_DISTINCT)
     }
 
     #[test]
     fn unequally_dup_lines() {
-        validate_equal("seq 100 | xargs -L1 seq", &[], UNIX_COUNT_DISTINCT)
+        validate_equal("seq 100 | xargs -L1 seq", false, UNIX_COUNT_DISTINCT)
     }
 
     #[test]
     fn count_empty() {
-        validate_equal("echo ; echo ; echo 1", &[], UNIX_COUNT_DISTINCT)
+        validate_equal("echo ; echo ; echo 1", false, UNIX_COUNT_DISTINCT)
     }
 
     /// Only works for single-char keys due to -w1, note col order swap.
@@ -325,7 +331,7 @@ mod tests {
             "(seq 100 | xargs -L1 echo 1) && \
              (seq 50 | xargs -L1 echo 2) && \
              (seq 25 | xargs -L1 echo 3)",
-            &["--key"],
+            true,
             UNIX_GROUPBY_COUNT_DISTINCT,
         )
     }
@@ -339,7 +345,7 @@ mod tests {
              (seq 50  | xargs -L1 echo 2) && \
              (seq 100 | xargs -L1 echo 1) && \
              (seq 50  | xargs -L1 echo 2)",
-            &["--key"],
+            true,
             UNIX_GROUPBY_COUNT_DISTINCT,
         )
     }
@@ -348,7 +354,7 @@ mod tests {
     fn keyed_count_empty() {
         validate_equal(
             "echo \"1 \"; echo 1 1; echo 1 3",
-            &["--key"],
+            true,
             UNIX_GROUPBY_COUNT_DISTINCT,
         )
     }
