@@ -21,9 +21,7 @@ At this point, this package only wraps the count-distinct CPC sketch and provide
 39.28 sec 898240 KB
 ```
 
-```bash
-TODO: some really fast keyed approx count in parallel, compare memory and time
-```
+Here's a sophisticated example of the tool [in action](https://vladfeinberg.com/2021/06/29/amazon-reviewers-with-sketches.html), used to compute rolling average active reviewers for Amazon over a couple decades. The equivalent non-sketch based solution OOMs.
 
 ## Installation
 
