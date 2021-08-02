@@ -7,3 +7,7 @@ mod wrapper;
 
 pub use wrapper::CpcSketch;
 pub use wrapper::CpcUnion;
+pub use wrapper::StaticThetaSketch;
+pub use wrapper::ThetaIntersection;
+pub use wrapper::ThetaSketch;
+pub use wrapper::ThetaUnion;

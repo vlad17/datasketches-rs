@@ -6,7 +6,7 @@
 #include "rust/cxx.h"
 #include "cpc/include/cpc_sketch.hpp"
 
-#include "bridge.hpp"
+#include "cpc.hpp"
 
 OpaqueCpcSketch::OpaqueCpcSketch():
   inner_{} {

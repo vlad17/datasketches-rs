@@ -7,7 +7,7 @@ fn main() {
 
     assert!(bridge.is_flag_supported("-std=c++11").expect("supported"));
     bridge
-        .file(datasketches.join("bridge.cpp"))
+        .files(&[datasketches.join("cpc.cpp"), datasketches.join("theta.cpp")])
         .include(datasketches.join("common").join("include"))
         .flag_if_supported("-std=c++11")
         .cpp_link_stdlib("stdc++")
