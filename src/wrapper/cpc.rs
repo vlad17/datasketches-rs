@@ -5,8 +5,8 @@ use cxx;
 use crate::bridge::ffi;
 
 /// The [Compressed Probability Counting][orig-docs] (CPC) sketch is
-/// a dynamically resizing distinct count sketch. Some differences between
-/// CPC and the more typical [HLL++][hll-wiki] are:
+/// a dynamically resizing (but still bounded-size) distinct count sketch.
+/// Some differences between CPC and the more typical [HLL++][hll-wiki] are:
 ///
 ///  * CPC theoretically uses less space than HLL (HLL++ does not
 ///    asymptotically improve over HLL).
