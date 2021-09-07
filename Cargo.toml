@@ -1,6 +1,6 @@
 [package]
 name = "dsrs"
-version = "0.4.1"
+version = "0.5.1"
 authors = ["Vladimir Feinberg <vladimir.feinberg@gmail.com>"]
 edition = "2018"
 description = "Rusty wrapper for Apache DataSketches"
@@ -17,6 +17,7 @@ structopt = "0.3"
 bstr = "0.2"
 memchr = "2.3"
 base64 = "0.13"
+thin-dst = "1.1"
 
 [build-dependencies]
 cxx-build = "1.0"
@@ -32,6 +33,7 @@ ordered-float = "2.5"
 probabilistic-collections = "0.7"
 probably = "0.3"
 assert_cmd = "1.0"
+rand = "0.8.4"
 
 [[bench]]
 name = "speed"

@@ -33,11 +33,12 @@ template<typename T, typename W, typename H, typename E, typename S, typename A>
 const uint8_t frequent_items_sketch<T, W, H, E, S, A>::LG_MIN_MAP_SIZE;
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
-frequent_items_sketch<T, W, H, E, S, A>::frequent_items_sketch(uint8_t lg_max_map_size, uint8_t lg_start_map_size, const A& allocator):
+frequent_items_sketch<T, W, H, E, S, A>::frequent_items_sketch(uint8_t lg_max_map_size, size_t hashset_addr, uint8_t lg_start_map_size, const A& allocator):
 total_weight(0),
 offset(0),
 map(
   std::max(lg_start_map_size, frequent_items_sketch::LG_MIN_MAP_SIZE),
+  hashset_addr,
   std::max(lg_max_map_size, frequent_items_sketch::LG_MIN_MAP_SIZE),
   allocator
 )
@@ -321,7 +322,7 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
     sketch.offset = offset;
   }
   if (!is.good())
-    throw std::runtime_error("error reading from std::istream"); 
+    throw std::runtime_error("error reading from std::istream");
   return sketch;
 }
 

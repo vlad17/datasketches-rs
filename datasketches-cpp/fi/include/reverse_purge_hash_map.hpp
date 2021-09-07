@@ -39,7 +39,7 @@ public:
   using AllocV = typename std::allocator_traits<A>::template rebind_alloc<V>;
   using AllocU16 = typename std::allocator_traits<A>::template rebind_alloc<uint16_t>;
 
-  reverse_purge_hash_map(uint8_t lg_size, uint8_t lg_max_size, const A& allocator);
+  reverse_purge_hash_map(uint8_t lg_size, size_t hashset_addr, uint8_t lg_max_size, const A& allocator);
   reverse_purge_hash_map(const reverse_purge_hash_map& other);
   reverse_purge_hash_map(reverse_purge_hash_map&& other) noexcept;
   ~reverse_purge_hash_map();
@@ -66,6 +66,7 @@ private:
   static constexpr uint32_t MAX_SAMPLE_SIZE = 1024; // number of samples to compute approximate median during purge
 
   A allocator_;
+  size_t hashset_addr_;
   uint8_t lg_cur_size_;
   uint8_t lg_max_size_;
   uint32_t num_active_;

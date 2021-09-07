@@ -64,7 +64,7 @@ public:
    * @param lg_start_map_size Log2 of the starting physical size of the internal hash
    * map managed by this sketch.
    */
-  explicit frequent_items_sketch(uint8_t lg_max_map_size, uint8_t lg_start_map_size = LG_MIN_MAP_SIZE, const A& allocator = A());
+  explicit frequent_items_sketch(uint8_t lg_max_map_size, size_t hashset_addr, uint8_t lg_start_map_size = LG_MIN_MAP_SIZE, const A& allocator = A());
 
   /**
    * Update this sketch with an item and a positive weight (frequency count).
@@ -270,6 +270,9 @@ public:
    * @param print_items if true include the list of items retained by the sketch
    */
   string<A> to_string(bool print_items = false) const;
+
+  void set_weights(W total_weight, W offset) { this->total_weight = total_weight; this->offset = offset; }
+  W get_offset() const { return this->offset; }
 
 private:
   static const uint8_t SERIAL_VERSION = 1;

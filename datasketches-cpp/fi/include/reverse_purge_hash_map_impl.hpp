@@ -27,6 +27,8 @@
 
 #include "MurmurHash3.h"
 
+void remove_from_hashset(size_t,size_t) noexcept;
+
 namespace datasketches {
 
 // clang++ seems to require this declaration for CMAKE_BUILD_TYPE='Debug"
@@ -34,8 +36,9 @@ template<typename K, typename V, typename H, typename E, typename A>
 constexpr uint32_t reverse_purge_hash_map<K, V, H, E, A>::MAX_SAMPLE_SIZE;
 
 template<typename K, typename V, typename H, typename E, typename A>
-reverse_purge_hash_map<K, V, H, E, A>::reverse_purge_hash_map(uint8_t lg_cur_size, uint8_t lg_max_size, const A& allocator):
+reverse_purge_hash_map<K, V, H, E, A>::reverse_purge_hash_map(uint8_t lg_cur_size, uintptr_t hashset_addr, uint8_t lg_max_size, const A& allocator):
 allocator_(allocator),
+hashset_addr_(hashset_addr),
 lg_cur_size_(lg_cur_size),
 lg_max_size_(lg_max_size),
 num_active_(0),
@@ -53,6 +56,7 @@ states_(nullptr)
 template<typename K, typename V, typename H, typename E, typename A>
 reverse_purge_hash_map<K, V, H, E, A>::reverse_purge_hash_map(const reverse_purge_hash_map<K, V, H, E, A>& other):
 allocator_(other.allocator_),
+hashset_addr_(other.hashset_addr_),
 lg_cur_size_(other.lg_cur_size_),
 lg_max_size_(other.lg_max_size_),
 num_active_(other.num_active_),
@@ -81,6 +85,7 @@ states_(nullptr)
 template<typename K, typename V, typename H, typename E, typename A>
 reverse_purge_hash_map<K, V, H, E, A>::reverse_purge_hash_map(reverse_purge_hash_map<K, V, H, E, A>&& other) noexcept:
 allocator_(std::move(other.allocator_)),
+hashset_addr_(other.hashset_addr_),
 lg_cur_size_(other.lg_cur_size_),
 lg_max_size_(other.lg_max_size_),
 num_active_(other.num_active_),
@@ -245,6 +250,7 @@ void reverse_purge_hash_map<K, V, H, E, A>::hash_delete(uint32_t delete_index) {
   // item to move to this location
   // if none are found, the status is changed
   states_[delete_index] = 0; // mark as empty
+  remove_from_hashset(hashset_addr_, keys_[delete_index]);
   keys_[delete_index].~K();
   uint16_t drift = 1;
   const uint32_t mask = (1 << lg_cur_size_) - 1;

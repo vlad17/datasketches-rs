@@ -52,6 +52,11 @@ find ../datasketches-cpp/ -name "*.h" -or -name "*.hpp" | \
   xargs -I {} cp ../{} {}
 # and the license info too
 cp ../datasketches-cpp/{NOTICE,LICENSE} datasketches-cpp/
+
+# some manual interventions were required for the heavy hitters
+# implementation, which requires the C++ side to temporarily own
+# keys from Rust, so additional management code needs to be injected.
+git apply fi.patch
 ```
 
 This is all only possible thanks to the excellent [dtolnay/cxx](https://github.com/dtolnay/cxx) library!

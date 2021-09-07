@@ -1,0 +1,119 @@
+diff --git a/datasketches-cpp/fi/include/frequent_items_sketch.hpp b/datasketches-cpp/fi/include/frequent_items_sketch.hpp
+index 6efe2b9..b2a9b86 100644
+--- a/datasketches-cpp/fi/include/frequent_items_sketch.hpp
++++ b/datasketches-cpp/fi/include/frequent_items_sketch.hpp
+@@ -64,7 +64,7 @@ public:
+    * @param lg_start_map_size Log2 of the starting physical size of the internal hash
+    * map managed by this sketch.
+    */
+-  explicit frequent_items_sketch(uint8_t lg_max_map_size, uint8_t lg_start_map_size = LG_MIN_MAP_SIZE, const A& allocator = A());
++  explicit frequent_items_sketch(uint8_t lg_max_map_size, size_t hashset_addr, uint8_t lg_start_map_size = LG_MIN_MAP_SIZE, const A& allocator = A());
+ 
+   /**
+    * Update this sketch with an item and a positive weight (frequency count).
+@@ -271,6 +271,9 @@ public:
+    */
+   string<A> to_string(bool print_items = false) const;
+ 
++  void set_weights(W total_weight, W offset) { this->total_weight = total_weight; this->offset = offset; }
++  W get_offset() const { return this->offset; }
++
+ private:
+   static const uint8_t SERIAL_VERSION = 1;
+   static const uint8_t FAMILY_ID = 10;
+diff --git a/datasketches-cpp/fi/include/frequent_items_sketch_impl.hpp b/datasketches-cpp/fi/include/frequent_items_sketch_impl.hpp
+index 593aa03..07d9ecf 100644
+--- a/datasketches-cpp/fi/include/frequent_items_sketch_impl.hpp
++++ b/datasketches-cpp/fi/include/frequent_items_sketch_impl.hpp
+@@ -33,11 +33,12 @@ template<typename T, typename W, typename H, typename E, typename S, typename A>
+ const uint8_t frequent_items_sketch<T, W, H, E, S, A>::LG_MIN_MAP_SIZE;
+ 
+ template<typename T, typename W, typename H, typename E, typename S, typename A>
+-frequent_items_sketch<T, W, H, E, S, A>::frequent_items_sketch(uint8_t lg_max_map_size, uint8_t lg_start_map_size, const A& allocator):
++frequent_items_sketch<T, W, H, E, S, A>::frequent_items_sketch(uint8_t lg_max_map_size, size_t hashset_addr, uint8_t lg_start_map_size, const A& allocator):
+ total_weight(0),
+ offset(0),
+ map(
+   std::max(lg_start_map_size, frequent_items_sketch::LG_MIN_MAP_SIZE),
++  hashset_addr,
+   std::max(lg_max_map_size, frequent_items_sketch::LG_MIN_MAP_SIZE),
+   allocator
+ )
+@@ -321,7 +322,7 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
+     sketch.offset = offset;
+   }
+   if (!is.good())
+-    throw std::runtime_error("error reading from std::istream"); 
++    throw std::runtime_error("error reading from std::istream");
+   return sketch;
+ }
+ 
+diff --git a/datasketches-cpp/fi/include/reverse_purge_hash_map.hpp b/datasketches-cpp/fi/include/reverse_purge_hash_map.hpp
+index fc4cd83..c667271 100644
+--- a/datasketches-cpp/fi/include/reverse_purge_hash_map.hpp
++++ b/datasketches-cpp/fi/include/reverse_purge_hash_map.hpp
+@@ -39,7 +39,7 @@ public:
+   using AllocV = typename std::allocator_traits<A>::template rebind_alloc<V>;
+   using AllocU16 = typename std::allocator_traits<A>::template rebind_alloc<uint16_t>;
+ 
+-  reverse_purge_hash_map(uint8_t lg_size, uint8_t lg_max_size, const A& allocator);
++  reverse_purge_hash_map(uint8_t lg_size, size_t hashset_addr, uint8_t lg_max_size, const A& allocator);
+   reverse_purge_hash_map(const reverse_purge_hash_map& other);
+   reverse_purge_hash_map(reverse_purge_hash_map&& other) noexcept;
+   ~reverse_purge_hash_map();
+@@ -66,6 +66,7 @@ private:
+   static constexpr uint32_t MAX_SAMPLE_SIZE = 1024; // number of samples to compute approximate median during purge
+ 
+   A allocator_;
++  size_t hashset_addr_;
+   uint8_t lg_cur_size_;
+   uint8_t lg_max_size_;
+   uint32_t num_active_;
+diff --git a/datasketches-cpp/fi/include/reverse_purge_hash_map_impl.hpp b/datasketches-cpp/fi/include/reverse_purge_hash_map_impl.hpp
+index 0b05d89..eeb0158 100644
+--- a/datasketches-cpp/fi/include/reverse_purge_hash_map_impl.hpp
++++ b/datasketches-cpp/fi/include/reverse_purge_hash_map_impl.hpp
+@@ -27,6 +27,8 @@
+ 
+ #include "MurmurHash3.h"
+ 
++void remove_from_hashset(size_t,size_t) noexcept;
++
+ namespace datasketches {
+ 
+ // clang++ seems to require this declaration for CMAKE_BUILD_TYPE='Debug"
+@@ -34,8 +36,9 @@ template<typename K, typename V, typename H, typename E, typename A>
+ constexpr uint32_t reverse_purge_hash_map<K, V, H, E, A>::MAX_SAMPLE_SIZE;
+ 
+ template<typename K, typename V, typename H, typename E, typename A>
+-reverse_purge_hash_map<K, V, H, E, A>::reverse_purge_hash_map(uint8_t lg_cur_size, uint8_t lg_max_size, const A& allocator):
++reverse_purge_hash_map<K, V, H, E, A>::reverse_purge_hash_map(uint8_t lg_cur_size, uintptr_t hashset_addr, uint8_t lg_max_size, const A& allocator):
+ allocator_(allocator),
++hashset_addr_(hashset_addr),
+ lg_cur_size_(lg_cur_size),
+ lg_max_size_(lg_max_size),
+ num_active_(0),
+@@ -53,6 +56,7 @@ states_(nullptr)
+ template<typename K, typename V, typename H, typename E, typename A>
+ reverse_purge_hash_map<K, V, H, E, A>::reverse_purge_hash_map(const reverse_purge_hash_map<K, V, H, E, A>& other):
+ allocator_(other.allocator_),
++hashset_addr_(other.hashset_addr_),
+ lg_cur_size_(other.lg_cur_size_),
+ lg_max_size_(other.lg_max_size_),
+ num_active_(other.num_active_),
+@@ -81,6 +85,7 @@ states_(nullptr)
+ template<typename K, typename V, typename H, typename E, typename A>
+ reverse_purge_hash_map<K, V, H, E, A>::reverse_purge_hash_map(reverse_purge_hash_map<K, V, H, E, A>&& other) noexcept:
+ allocator_(std::move(other.allocator_)),
++hashset_addr_(other.hashset_addr_),
+ lg_cur_size_(other.lg_cur_size_),
+ lg_max_size_(other.lg_max_size_),
+ num_active_(other.num_active_),
+@@ -245,6 +250,7 @@ void reverse_purge_hash_map<K, V, H, E, A>::hash_delete(uint32_t delete_index) {
+   // item to move to this location
+   // if none are found, the status is changed
+   states_[delete_index] = 0; // mark as empty
++  remove_from_hashset(hashset_addr_, keys_[delete_index]);
+   keys_[delete_index].~K();
+   uint16_t drift = 1;
+   const uint32_t mask = (1 << lg_cur_size_) - 1;

@@ -6,7 +6,9 @@
 //! LTO, see dtolnay/cxx#371.
 
 mod cpc;
+pub(crate) mod hh;
 mod theta;
 
 pub use cpc::{CpcSketch, CpcUnion};
+pub use hh::HhSketch;
 pub use theta::{StaticThetaSketch, ThetaIntersection, ThetaSketch, ThetaUnion};

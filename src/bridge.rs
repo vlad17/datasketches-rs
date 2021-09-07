@@ -2,8 +2,22 @@
 //!
 //! See [`crate::wrapper`] for external Rust-friendly types.
 
+use crate::wrapper::hh::remove_from_hashset;
+
 #[cxx::bridge]
 pub(crate) mod ffi {
+
+    /// An entry to the heavy hitters sketch with keys that refer to addresses.
+    struct ThinHeavyHitterRow {
+        addr: usize,
+        lb: u64,
+        ub: u64,
+    }
+
+    extern "Rust" {
+        unsafe fn remove_from_hashset(hashset_addr: usize, addr: usize);
+    }
+
     unsafe extern "C++" {
         include!("dsrs/datasketches-cpp/cpc.hpp");
 
@@ -63,5 +77,23 @@ pub(crate) mod ffi {
             to_intersect: UniquePtr<OpaqueStaticThetaSketch>,
         );
 
+        include!("dsrs/datasketches-cpp/hh.hpp");
+
+        pub(crate) type OpaqueHhSketch;
+
+        pub(crate) fn new_opaque_hh_sketch(lg2_k: u8, hashset_addr: usize) -> UniquePtr<OpaqueHhSketch>;
+        pub(crate) fn estimate_no_fp(
+            self: &OpaqueHhSketch,
+        ) -> UniquePtr<CxxVector<ThinHeavyHitterRow>>;
+        pub(crate) fn estimate_no_fn(
+            self: &OpaqueHhSketch,
+        ) -> UniquePtr<CxxVector<ThinHeavyHitterRow>>;
+        pub(crate) fn state(
+            self: &OpaqueHhSketch,
+        ) -> UniquePtr<CxxVector<ThinHeavyHitterRow>>;
+        pub(crate) fn update(self: Pin<&mut OpaqueHhSketch>, value: usize, weight: u64);
+        pub(crate) fn set_weights(self: Pin<&mut OpaqueHhSketch>, total_weight: u64, weight: u64);
+        pub(crate) fn get_total_weight(self: &OpaqueHhSketch) -> u64;
+        pub(crate) fn get_offset(self: &OpaqueHhSketch) -> u64;
     }
 }
