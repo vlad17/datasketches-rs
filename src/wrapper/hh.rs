@@ -171,10 +171,20 @@ impl HhSketch {
 
     /// Observe a new value.
     pub fn update(&mut self, value: &[u8], weight: u64) {
-        let key = self.intern.get_or_insert_with::<[u8], _>(value, |buf| {
-            ThinByteBox(ThinBox::new((), buf.iter().cloned()))
-        });
-        let thinref = ThinRef::<(), u8>::from(&*key.0);
+        // TODO: once this hash_set_entry API merges, this approach can save
+        // on two (!) needless hash re-computations.
+        // #![feature(hash_set_entry)]
+        // let key = self.intern.get_or_insert_with::<[u8], _>(value, |buf| {
+        // ThinByteBox(ThinBox::new((), buf.iter().cloned()))
+        // });
+        let key = if let Some(key) = self.intern.get(value) {
+            &*key.0
+        } else {
+            let key = ThinByteBox(ThinBox::new((), value.iter().cloned()));
+            self.intern.insert(key);
+            &*self.intern.get(value).expect("present key").0
+        };
+        let thinref = ThinRef::<(), u8>::from(key);
         let key = ThinRef::<(), u8>::erase(thinref).as_ptr() as *const _ as usize;
         self.inner.pin_mut().update(key, weight)
     }
