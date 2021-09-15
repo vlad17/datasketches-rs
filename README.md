@@ -94,6 +94,7 @@ cp ../datasketches-cpp/{NOTICE,LICENSE} datasketches-cpp/
 # implementation, which requires the C++ side to temporarily own
 # keys from Rust, so additional management code needs to be injected.
 git apply fi.patch
+git grep -l "uint16_t DRIFT_LIMIT = [0-9]*;" | xargs sed -i 's/uint16_t DRIFT_LIMIT = [0-9]*;/uint32_t DRIFT_LIMIT = 1024 * 1024 * 1024;/'
 ```
 
 This is all only possible thanks to the excellent [dtolnay/cxx](https://github.com/dtolnay/cxx) library!

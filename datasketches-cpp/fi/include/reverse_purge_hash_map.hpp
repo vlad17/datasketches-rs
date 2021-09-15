@@ -62,7 +62,7 @@ public:
 
 private:
   static constexpr double LOAD_FACTOR = 0.75;
-  static constexpr uint16_t DRIFT_LIMIT = 1024; // used only for stress testing
+  static constexpr uint32_t DRIFT_LIMIT = 1024 * 1024 * 1024; // used only for stress testing
   static constexpr uint32_t MAX_SAMPLE_SIZE = 1024; // number of samples to compute approximate median during purge
 
   A allocator_;
