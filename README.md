@@ -1,24 +1,61 @@
 # DataSketches in Rust
 
-A Rust binding for the [Apache DataSketches](https://datasketches.apache.org/) library.
+A Rust binding for the [Apache DataSketches](https://datasketches.apache.org/) library and command-line tool.
 
-At this point, this package only wraps the count-distinct CPC sketch and provides a command-line tool, `dsrs`, for approximate distinct line-counting functionality (I personally find this useful when collecting statistics from logs). Examples require [GNU Parallel](https://www.gnu.org/software/parallel). The command-line part probably doesn't work on Windows.
+On the command-line, we provide
+
+  - `dsrs [--key] [--raw] [--merge]` for approximate distinct line-counting, and
+  - `dsrs --hh k` for heavy hitters (approximate most frequent lines).
+
+For instance, the following experiment checks how many unique lines exist when you print all numbers up to 100M twice.
 
 ```bash
-(seq $((100 * 1000 * 1000)) && seq $((100 * 1000 * 1000))) | \
+m100=$((100 * 1000 * 1000))
+(seq $m100 && seq $m100) | \
   /usr/bin/time -f "%e sec %M KB" dsrs
 102055590
 5.22 sec 4288 KB
 
-(seq $((100 * 1000 * 1000)) && seq $((100 * 1000 * 1000))) | \
+(seq $m100 && seq $m100) | \
   /usr/bin/time -f "%e sec %M KB" sort -u | wc -l
 438.66 sec 12880 KB
 100000000
 
-(seq $((100 * 1000 * 1000)) && seq $((100 * 1000 * 1000))) | \
+(seq $m100 && seq $m100) | \
   /usr/bin/time -f "%e sec %M KB" awk '{a[$0]=1}END{print length(a)}'
 100000000
 39.28 sec 898240 KB
+```
+
+Next, we can ask for the most popular lines from a stream (there is a [topfew](https://github.com/djc/topfew-rs) Rust package, but it does not support streams).
+
+```bash
+m10=$((10 * 1000 * 1000))
+seq $m10 | sed 's/$/\n1\n2\n3/' | \
+  /usr/bin/time -f "%e sec %M KB" sort | \
+  uniq -c | sort -rn | head -3
+54.88 sec 8968 KB
+10000001 3
+10000001 2
+10000001 1
+  
+# exact hashmap solution, requires go
+pushd /tmp && \
+  (test -d topfew || git clone git@github.com:timbray/topfew.git topfew) && \
+  pushd topfew && make && popd && popd
+seq $m10 | sed 's/$/\n1\n2\n3/' | \
+  /usr/bin/time -f "%e sec %M KB" /tmp/topfew/bin/tf -f 1 -n 3
+10000001 2
+10000001 3
+10000001 1
+10.67 sec 1060332 KB
+  
+seq $m10 | sed 's/$/\n1\n2\n3/' | \
+  /usr/bin/time -f "%e sec %M KB" target/release/dsrs --hh 3
+10000001 2
+10000001 1
+10000001 3
+4.48 sec 4560 KB
 ```
 
 Here's a sophisticated example of the tool [in action](https://vladfeinberg.com/2021/06/29/amazon-reviewers-with-sketches.html), used to compute rolling average active reviewers for Amazon over a couple decades. The equivalent non-sketch based solution OOMs.

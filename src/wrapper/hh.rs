@@ -168,7 +168,7 @@ impl HhSketch {
             .map(|x| self.thin_row_to_owned(x))
             .collect()
     }
-
+    
     /// Observe a new value.
     pub fn update(&mut self, value: &[u8], weight: u64) {
         // TODO: once this hash_set_entry API merges, this approach can save
@@ -199,14 +199,6 @@ impl HhSketch {
         let offset = self.inner.get_offset() + other.inner.get_offset();
         self.inner.pin_mut().set_weights(total_weight, offset);
     }
-
-    // TODONOW: get rid of all this FP/FN nonsense. just return full state,
-    // and have guarnatees on the set contained within it.
-    // TODONOW: heavy hitter commandline    
-
-    // TODO: custom serde, should be similar in implementation to merge.
-    // Can't rely on the C++ side serde because it is memory-address dependent.
-    // Check serde in check_cycle calls.
 }
 
 impl Clone for HhSketch {
