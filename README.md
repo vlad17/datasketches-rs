@@ -58,7 +58,7 @@ seq $m10 | sed 's/$/\n1\n2\n3/' | \
 4.48 sec 4560 KB
 ```
 
-Here's a sophisticated example of the tool [in action](https://vladfeinberg.com/2021/06/29/amazon-reviewers-with-sketches.html), used to compute rolling average active reviewers for Amazon over a couple decades. The equivalent non-sketch based solution OOMs.
+Here's a sophisticated example of the tool [in action](https://vladfeinberg.com/2021/06/29/amazon-reviewers-with-sketches.html), used to compute rolling average active reviewers for Amazon over a couple decades. The equivalent non-sketch based solution OOMs. Similarly, we can use `dsrs --hh` to extract the most popular [SciHub downloads](https://vladfeinberg.com/2021/10/01/topfew.html) using multiple orders of magnitude less memory than an exact solution.
 
 ## Installation
 
