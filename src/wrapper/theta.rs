@@ -133,8 +133,7 @@ pub struct ThetaIntersection {
 }
 
 impl ThetaIntersection {
-    /// Create a theta union over nothing, which corresponds to the
-    /// empty set.
+    /// Create a theta intersection.
     pub fn new() -> Self {
         Self {
             inner: ffi::new_opaque_theta_intersection(),
@@ -145,7 +144,9 @@ impl ThetaIntersection {
         self.inner.pin_mut().intersect_with(sketch.inner);
     }
 
-    /// Retrieve the current unioned sketch as a copy.
+    /// Retrieve the current intersected sketch as a copy. Returns `None`
+    /// if the sketch represents the universal set (which it does before
+    /// at least one call to `merge()`.)
     pub fn sketch(&self) -> Option<StaticThetaSketch> {
         let inner = self.inner.sketch();
         let valid = !inner.is_null();
