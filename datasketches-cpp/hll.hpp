@@ -8,6 +8,9 @@
 #include "rust/cxx.h"
 #include "hll/include/hll.hpp"
 
+// alias
+typedef datasketches::target_hll_type target_hll_type;
+
 class OpaqueHLLSketch {
 public:
   double estimate() const;
@@ -28,7 +31,7 @@ std::unique_ptr<OpaqueHLLSketch> deserialize_opaque_hll_sketch(rust::Slice<const
 
 class OpaqueHLLUnion {
 public:
-  std::unique_ptr<OpaqueHLLSketch> sketch() const;
+  std::unique_ptr<OpaqueHLLSketch> sketch(datasketches::target_hll_type tgt_type) const;
   void merge(std::unique_ptr<OpaqueHLLSketch> to_add);
   OpaqueHLLUnion(uint8_t lg_max_k);
 private:

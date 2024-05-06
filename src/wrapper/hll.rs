@@ -1,11 +1,10 @@
 //! Wrapper type for the Heavy Hitter sketch.
 
-use std::borrow::Borrow;
-use std::hash::{Hash, Hasher};
-
 use cxx;
 
 use crate::bridge::ffi;
+
+pub type HLLType = ffi::target_hll_type;
 
 /// The [HyperLogLog][orig-docs] (HLL) sketch. Under hood implementation is based on
 /// Phillipe Flajolet’s HyperLogLog (HLL) sketch but with significantly improved error behavior
@@ -90,9 +89,9 @@ impl HLLUnion {
     }
 
     /// Retrieve the current unioned sketch as a copy.
-    pub fn sketch(&self) -> HLLSketch {
+    pub fn sketch(&self, tgt_type: HLLType) -> HLLSketch {
         HLLSketch {
-            inner: self.inner.sketch(),
+            inner: self.inner.sketch(tgt_type),
         }
     }
 }
@@ -100,7 +99,6 @@ impl HLLUnion {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::CpcSketch;
     use byte_slice_cast::AsByteSlice;
 
     fn check_cycle(s: &HLLSketch) {
@@ -159,13 +157,13 @@ mod tests {
 
     #[test]
     fn hll_union_empty() {
-        let hll = HLLUnion::new(12).sketch();
+        let hll = HLLUnion::new(12).sketch(HLLType::HLL_4);
         assert_eq!(hll.estimate(), 0.0);
 
         let mut union = HLLUnion::new(12);
         union.merge(hll);
         union.merge(HLLSketch::new(12));
-        let cpc = union.sketch();
+        let cpc = union.sketch(HLLType::HLL_4);
         assert_eq!(cpc.estimate(), 0.0);
     }
 
@@ -182,7 +180,7 @@ mod tests {
                 hll.update_u64(key);
             }
             union.merge(hll);
-            let merged = union.sketch();
+            let merged = union.sketch(HLLType::HLL_4);
             let est = merged.estimate();
             check_cycle(&merged);
             let lb = n as f64 * 0.95;
@@ -205,7 +203,7 @@ mod tests {
                 hll.update_u64(key);
             }
             union.merge(hll);
-            let merged = union.sketch();
+            let merged = union.sketch(HLLType::HLL_4);
             let est = merged.estimate();
             check_cycle(&merged);
             let lb = (n * nrepeats.min(i + 1)) as f64 * 0.95;

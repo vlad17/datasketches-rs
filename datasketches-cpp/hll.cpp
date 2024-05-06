@@ -64,8 +64,8 @@ OpaqueHLLUnion::OpaqueHLLUnion(uint8_t lg_max_k):
   inner_{ datasketches::hll_union(lg_max_k) } {
 }
 
-std::unique_ptr<OpaqueHLLSketch> OpaqueHLLUnion::sketch() const {
-  return std::unique_ptr<OpaqueHLLSketch>(new OpaqueHLLSketch{this->inner_.get_result(datasketches::target_hll_type::HLL_4)});
+std::unique_ptr<OpaqueHLLSketch> OpaqueHLLUnion::sketch(datasketches::target_hll_type tgt_type) const {
+  return std::unique_ptr<OpaqueHLLSketch>(new OpaqueHLLSketch{this->inner_.get_result(tgt_type)});
 }
 
 void OpaqueHLLUnion::merge(std::unique_ptr<OpaqueHLLSketch> to_add) {
