@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Install coreutils
+        run: brew install coreutils
       - name: Run cargo build
         run: cargo build
       - name: Run cargo test
