@@ -198,6 +198,9 @@ mod tests {
 
     #[test]
     fn cpc_deserialization_error() {
-        assert!(matches!(CpcSketch::deserialize(&[9, 9, 9, 9]), Err(DataSketchesError::CXXError(_))));
+        assert!(matches!(
+            CpcSketch::deserialize(&[9, 9, 9, 9]),
+            Err(DataSketchesError::CXXError(_))
+        ));
     }
 }

@@ -24,7 +24,9 @@ pub(crate) mod ffi {
         pub(crate) type OpaqueCpcSketch;
 
         pub(crate) fn new_opaque_cpc_sketch() -> UniquePtr<OpaqueCpcSketch>;
-        pub(crate) fn deserialize_opaque_cpc_sketch(buf: &[u8]) -> Result<UniquePtr<OpaqueCpcSketch>>;
+        pub(crate) fn deserialize_opaque_cpc_sketch(
+            buf: &[u8],
+        ) -> Result<UniquePtr<OpaqueCpcSketch>>;
         pub(crate) fn estimate(self: &OpaqueCpcSketch) -> f64;
         pub(crate) fn update(self: Pin<&mut OpaqueCpcSketch>, buf: &[u8]);
         pub(crate) fn update_u64(self: Pin<&mut OpaqueCpcSketch>, value: u64);
@@ -81,16 +83,17 @@ pub(crate) mod ffi {
 
         pub(crate) type OpaqueHhSketch;
 
-        pub(crate) fn new_opaque_hh_sketch(lg2_k: u8, hashset_addr: usize) -> UniquePtr<OpaqueHhSketch>;
+        pub(crate) fn new_opaque_hh_sketch(
+            lg2_k: u8,
+            hashset_addr: usize,
+        ) -> UniquePtr<OpaqueHhSketch>;
         pub(crate) fn estimate_no_fp(
             self: &OpaqueHhSketch,
         ) -> UniquePtr<CxxVector<ThinHeavyHitterRow>>;
         pub(crate) fn estimate_no_fn(
             self: &OpaqueHhSketch,
         ) -> UniquePtr<CxxVector<ThinHeavyHitterRow>>;
-        pub(crate) fn state(
-            self: &OpaqueHhSketch,
-        ) -> UniquePtr<CxxVector<ThinHeavyHitterRow>>;
+        pub(crate) fn state(self: &OpaqueHhSketch) -> UniquePtr<CxxVector<ThinHeavyHitterRow>>;
         pub(crate) fn update(self: Pin<&mut OpaqueHhSketch>, value: usize, weight: u64);
         pub(crate) fn set_weights(self: Pin<&mut OpaqueHhSketch>, total_weight: u64, weight: u64);
         pub(crate) fn get_total_weight(self: &OpaqueHhSketch) -> u64;

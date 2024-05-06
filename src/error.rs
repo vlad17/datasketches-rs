@@ -10,7 +10,9 @@ impl Display for DataSketchesError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             DataSketchesError::CXXError(err) => f.write_fmt(format_args!("Error: {}", err)),
-            DataSketchesError::DecodeError(err) => f.write_fmt(format_args!("DecodeError: {}", err))
+            DataSketchesError::DecodeError(err) => {
+                f.write_fmt(format_args!("DecodeError: {}", err))
+            }
         }
     }
 }

@@ -271,6 +271,9 @@ mod tests {
 
     #[test]
     fn theta_static_deserialization_error() {
-        assert!(matches!(StaticThetaSketch::deserialize(&[9, 9, 9, 9]), Err(DataSketchesError::CXXError(_))));
+        assert!(matches!(
+            StaticThetaSketch::deserialize(&[9, 9, 9, 9]),
+            Err(DataSketchesError::CXXError(_))
+        ));
     }
 }
