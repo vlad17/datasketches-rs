@@ -13,8 +13,8 @@ public:
   double estimate() const;
   void update(rust::Slice<const uint8_t> buf);
   void update_u64(uint64_t value);
-  friend std::unique_ptr<OpaqueHLLSketch> deserialize_opaque_hll_sketch(rust::Slice<const uint8_t> buf);
   std::unique_ptr<std::vector<uint8_t>> serialize() const;
+  friend std::unique_ptr<OpaqueHLLSketch> deserialize_opaque_hll_sketch(rust::Slice<const uint8_t> buf);
   OpaqueHLLSketch(unsigned lg_k);
 private:
   OpaqueHLLSketch(std::istream& is);

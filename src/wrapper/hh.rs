@@ -1,13 +1,13 @@
 //! Wrapper type for the Heavy Hitter sketch.
 
-use std::ptr::NonNull;
-use std::slice;
 use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
+use std::ptr::NonNull;
+use std::slice;
 
 use cxx;
-use thin_dst::{ThinRef,ThinBox};
+use thin_dst::{ThinBox, ThinRef};
 
 use crate::bridge::ffi;
 
@@ -23,7 +23,7 @@ impl Borrow<[u8]> for ThinByteBox {
 
 impl Hash for ThinByteBox {
     fn hash<H: Hasher>(&self, state: &mut H) {
-	let slice: &[u8] = self.borrow();
+        let slice: &[u8] = self.borrow();
         slice.hash(state);
     }
 }
@@ -33,10 +33,9 @@ impl PartialEq for ThinByteBox {
         let mine: &[u8] = self.borrow();
         let yours: &[u8] = other.borrow();
         mine.eq(yours)
-    }        
+    }
 }
-impl Eq for ThinByteBox {
-}
+impl Eq for ThinByteBox {}
 
 /// The [Heavy Hitter][orig-docs] (HH) sketch computes an approximate set of the
 /// heavy hitters, the items in a data stream which appear most often. Along with
@@ -80,7 +79,7 @@ pub struct HhSketch {
     /// Bytestring keys are stored here; the C++ implementation refers to the byte slice
     /// _addresses_ as the unique keys in the heavy hitter sketch.
     intern: Box<HashSet<ThinByteBox>>, // boxed for stable address
-    lg2_k: u8
+    lg2_k: u8,
 }
 
 /// An entry in the heavy hitters sketch.
@@ -94,7 +93,7 @@ pub struct HhRow<'a> {
 /// Function safety must be justified due to lifetime construction
 unsafe fn addr_to_thinref<'a>(addr: usize) -> ThinRef<'a, (), u8> {
     // not actually used as mut, which would be unsafe
-    let ptr = addr as *mut _;    
+    let ptr = addr as *mut _;
     let nonnull = NonNull::<_>::new(ptr).expect("non-null pointer");
     ThinRef::<'a, (), u8>::from_erased(nonnull)
 }
@@ -114,7 +113,7 @@ unsafe fn addr_to_hashset<'a>(addr: usize) -> &'a mut HashSet<ThinByteBox> {
 ///      FFI-intended function.
 ///   2. The corresponding addresses refer to the hashset and one of its keys from
 ///      the `HhSketch` in question.
-pub(crate) unsafe fn remove_from_hashset(hashset_addr:usize, addr: usize) {
+pub(crate) unsafe fn remove_from_hashset(hashset_addr: usize, addr: usize) {
     // eprintln!("remove_from_hashset({},{})", hashset_addr, addr);
     let hs = addr_to_hashset(hashset_addr);
     let thinref = addr_to_thinref(addr);
@@ -168,7 +167,7 @@ impl HhSketch {
             .map(|x| self.thin_row_to_owned(x))
             .collect()
     }
-    
+
     /// Observe a new value.
     pub fn update(&mut self, value: &[u8], weight: u64) {
         // TODO: once this hash_set_entry API merges, this approach can save
@@ -264,9 +263,9 @@ mod tests {
     /// Makes sure that all keys in `expected` are present with the expected frequency.
     fn matches(hh: &HhSketch, expected: &[(u64, u64)]) {
         let present = row2keys(&hh)
-            .into_iter().map(|(key, lb, ub)| {
-	        (key, (lb, ub))
-            }).collect::<HashMap<_, _>>();
+            .into_iter()
+            .map(|(key, lb, ub)| (key, (lb, ub)))
+            .collect::<HashMap<_, _>>();
         for &(k, v) in expected {
             assert!(present.contains_key(&k), "key missing {}", k);
             let (lb, ub) = present[&k];
@@ -277,23 +276,22 @@ mod tests {
 
     fn matches_violations(hh: &HhSketch, expected: &[(u64, u64)]) -> usize {
         let present = row2keys(&hh)
-            .into_iter().map(|(key, lb, ub)| {
-	        (key, (lb, ub))
-            }).collect::<HashMap<_, _>>();
+            .into_iter()
+            .map(|(key, lb, ub)| (key, (lb, ub)))
+            .collect::<HashMap<_, _>>();
         let mut violations = 0;
         for &(k, v) in expected {
             if !present.contains_key(&k) {
                 violations += 1;
                 continue;
-            }                    
+            }
             let (lb, ub) = present[&k];
             if lb > v || ub < v {
                 violations += 1;
             }
         }
-        return violations
+        return violations;
     }
-
 
     #[test]
     fn basic_heavy() {
@@ -318,7 +316,14 @@ mod tests {
                     hh.update(slice.as_byte_slice(), 1)
                 }
             }
-            matches(&hh, &heavies.iter().cloned().map(|k| (k, (max * 2 + 1) * iters)).collect::<Vec<_>>());
+            matches(
+                &hh,
+                &heavies
+                    .iter()
+                    .cloned()
+                    .map(|k| (k, (max * 2 + 1) * iters))
+                    .collect::<Vec<_>>(),
+            );
             check_cycle(&hh);
         }
     }
@@ -392,11 +397,17 @@ mod tests {
             }
             let mut hh = hhs.pop().expect("some last");
             hhs.into_iter().for_each(|other| hh.merge(&other));
-            matches(&hh, &heavies.iter().cloned().map(|k| (k, heavy_weight)).collect::<Vec<_>>());
+            matches(
+                &hh,
+                &heavies
+                    .iter()
+                    .cloned()
+                    .map(|k| (k, heavy_weight))
+                    .collect::<Vec<_>>(),
+            );
             check_cycle(&hh);
         }
     }
-
 
     // lg2_k in 4,5
     // stream_multiplier in 2, 5, 20
@@ -414,8 +425,8 @@ mod tests {
         let thresh = (7 * (stream_multiplier as u64) + 1) / 2;
 
         let mut histogram = match nunique {
-	    1 => {
-                assert!(n/thresh > 1);
+            1 => {
+                assert!(n / thresh > 1);
                 vec![thresh; (n / thresh) as usize]
             }
             2 => {
@@ -454,31 +465,36 @@ mod tests {
             histogram.push(1);
         }
 
-        let mut data = histogram.iter().cloned().enumerate()
+        let mut data = histogram
+            .iter()
+            .cloned()
+            .enumerate()
             .flat_map(|(i, repeats)| iter::repeat(i as u64).take(repeats as usize))
             .collect::<Vec<_>>();
         assert!(data.len() == n as usize);
 
-        let expected = histogram.iter().cloned().enumerate().filter(|(_, repeats)| *repeats >= thresh)
+        let expected = histogram
+            .iter()
+            .cloned()
+            .enumerate()
+            .filter(|(_, repeats)| *repeats >= thresh)
             .map(|(k, repeats)| (k as u64, repeats))
             .collect::<Vec<_>>();
-        
+
         let ntrials = 25;
         let mut rng = StdRng::seed_from_u64(1234);
         let mut failures = 0;
         for _ in 0..ntrials {
-	    data.shuffle(&mut rng);
+            data.shuffle(&mut rng);
             let mut hh = HhSketch::new(lg2_k);
             for &i in &data {
                 let slice = [i];
                 hh.update(slice.as_byte_slice(), 1)
             }
             check_cycle(&hh);
-            let any_invalid  =row2keys(&hh)
+            let any_invalid = row2keys(&hh)
                 .into_iter()
-                .any(|(k, lb, ub)| {
-                    lb > histogram[k as usize] || ub < histogram[k as usize]
-                });
+                .any(|(k, lb, ub)| lb > histogram[k as usize] || ub < histogram[k as usize]);
             if any_invalid || matches_violations(&hh, &expected) > 0 {
                 failures += 1;
             }
@@ -486,19 +502,25 @@ mod tests {
 
         // Could derive a proper p-value here but I don't trust the numerics of the current
         // statrs crate (especially at this wonky setting for low 1/n and low ntrials).
-        assert!(failures <= 1, "failures {} ntrials {} n {}", failures, ntrials, n);
+        assert!(
+            failures <= 1,
+            "failures {} ntrials {} n {}",
+            failures,
+            ntrials,
+            n
+        );
     }
 
     #[test]
     fn check_hh_lgk4_multiplier2_nunique1() {
         check_hh_property(4, 2, 1);
     }
-    
+
     #[test]
     fn check_hh_lgk4_multiplier2_nunique2() {
         check_hh_property(4, 2, 2);
     }
-    
+
     #[test]
     fn check_hh_lgk4_multiplier2_nunique3() {
         check_hh_property(4, 2, 3);
@@ -508,32 +530,32 @@ mod tests {
     fn check_hh_lgk4_multiplier5_nunique1() {
         check_hh_property(4, 5, 1);
     }
-    
+
     #[test]
     fn check_hh_lgk4_multiplier5_nunique2() {
         check_hh_property(4, 5, 2);
     }
-    
+
     #[test]
     fn check_hh_lgk4_multiplier5_nunique3() {
         check_hh_property(4, 5, 3);
     }
-    
+
     #[test]
     fn check_hh_lgk4_multiplier20_nunique1() {
         check_hh_property(4, 20, 1);
     }
-    
+
     #[test]
     fn check_hh_lgk4_multiplier20_nunique2() {
         check_hh_property(4, 20, 2);
     }
-    
+
     #[test]
     fn check_hh_lgk4_multiplier20_nunique3() {
         check_hh_property(4, 20, 3);
     }
-    
+
     #[test]
     fn hh_empty() {
         let hh = HhSketch::new(12);

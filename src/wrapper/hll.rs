@@ -1,9 +1,9 @@
 //! Wrapper type for the Heavy Hitter sketch.
 
-use std::ptr::NonNull;
-use std::slice;
 use std::borrow::Borrow;
 use std::hash::{Hash, Hasher};
+use std::ptr::NonNull;
+use std::slice;
 
 use cxx;
 
@@ -41,6 +41,16 @@ impl HLLSketch {
         self.inner.pin_mut().update_u64(value)
     }
 
+    pub fn serialize(&self) -> impl AsRef<[u8]> {
+        struct UPtrVec(cxx::UniquePtr<cxx::CxxVector<u8>>);
+        impl AsRef<[u8]> for UPtrVec {
+            fn as_ref(&self) -> &[u8] {
+                self.0.as_slice()
+            }
+        }
+        UPtrVec(self.inner.serialize())
+    }
+
     pub fn deserialize(buf: &[u8]) -> Self {
         // TODO: this could be friendlier, it currently terminates
         // the program no bad deserialization, and instead can be a
@@ -61,13 +71,32 @@ impl HLLSketch {
 
 #[cfg(test)]
 mod tests {
+    use bstr::ByteSlice;
     use std::collections::HashMap;
     use std::iter;
-    use bstr::ByteSlice;
 
+    use crate::CpcSketch;
     use byte_slice_cast::{AsByteSlice, AsSliceOf};
 
     use super::*;
+
+    fn check_cycle(s: &HLLSketch) {
+        let est = s.estimate();
+        let bytes = s.serialize();
+        let cpy = HLLSketch::deserialize(bytes.as_ref());
+        let cpy2 = HLLSketch::deserialize(bytes.as_ref());
+        let cpy3 = HLLSketch::deserialize(bytes.as_ref());
+        assert_eq!(est, cpy.estimate());
+        assert_eq!(est, cpy2.estimate());
+        assert_eq!(est, cpy3.estimate());
+    }
+
+    #[test]
+    fn hll_empty() {
+        let cpc = HLLSketch::new(12);
+        assert_eq!(cpc.estimate(), 0.0);
+        check_cycle(&cpc);
+    }
 
     #[test]
     fn hll_simple_test() {
@@ -87,9 +116,33 @@ mod tests {
 
     #[test]
     fn hll_deserialize_databricks() {
-        let bytes = base64::decode_config("AgEHDAMABAgr8vsGdYFmB4Yv+Q2BvF0GAAAAAAAAAAAAAAAAAAAAAA==", base64::STANDARD_NO_PAD).unwrap();
+        let bytes = base64::decode_config(
+            "AgEHDAMABAgr8vsGdYFmB4Yv+Q2BvF0GAAAAAAAAAAAAAAAAAAAAAA==",
+            base64::STANDARD_NO_PAD,
+        )
+        .unwrap();
         let hh = HLLSketch::deserialize(&bytes);
 
         assert_eq!(hh.estimate(), 4.000000029802323);
+    }
+
+    #[test]
+    fn hll_merge_sketches() {
+        let bytes = base64::decode_config(
+            "AgEHDAMABAgr8vsGdYFmB4Yv+Q2BvF0GAAAAAAAAAAAAAAAAAAAAAA==",
+            base64::STANDARD_NO_PAD,
+        )
+        .unwrap();
+        let hh1 = HLLSketch::deserialize(&bytes);
+
+        let bytes = base64::decode_config(
+            "AgEHDAMABAgGc2UEe2XmCNsXmgrDsDgEAAAAAAAAAAAAAAAAAAAAAA==",
+            base64::STANDARD_NO_PAD,
+        )
+        .unwrap();
+        let hh2 = HLLSketch::deserialize(&bytes);
+
+        assert_eq!(hh1.estimate(), 4.000000029802323);
+        assert_eq!(hh2.estimate(), 4.000000029802323);
     }
 }

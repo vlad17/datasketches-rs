@@ -28,21 +28,21 @@ void OpaqueHLLSketch::update_u64(uint64_t value) {
   this->inner_.update(value);
 }
 
-//std::unique_ptr<std::vector<uint8_t>> OpaqueHLLSketch::serialize() const {
-//  // TODO: could use a custom streambuf to avoid the
-//  // stream -> vec copy https://stackoverflow.com/a/13059195/1779853
-//  std::stringstream s{};
-//  auto start = s.tellg();
-//  this->inner_.serialize(s);
-//  s.seekg(0, std::ios::end);
-//  auto stop = s.tellg();
-//
-//  std::vector<uint8_t> v(std::size_t(stop-start));
-//  s.seekg(0, std::ios::beg);
-//  s.read(reinterpret_cast<char*>(v.data()), std::streamsize(v.size()));
-//
-//  return std::unique_ptr<std::vector<uint8_t>>(new std::vector<uint8_t>(std::move(v)));
-//}
+std::unique_ptr<std::vector<uint8_t>> OpaqueHLLSketch::serialize() const {
+  // TODO: could use a custom streambuf to avoid the
+  // stream -> vec copy https://stackoverflow.com/a/13059195/1779853
+  std::stringstream s{};
+  auto start = s.tellg();
+  this->inner_.serialize_compact(s);
+  s.seekg(0, std::ios::end);
+  auto stop = s.tellg();
+
+  std::vector<uint8_t> v(std::size_t(stop-start));
+  s.seekg(0, std::ios::beg);
+  s.read(reinterpret_cast<char*>(v.data()), std::streamsize(v.size()));
+
+  return std::unique_ptr<std::vector<uint8_t>>(new std::vector<uint8_t>(std::move(v)));
+}
 
 std::unique_ptr<OpaqueHLLSketch> new_opaque_hll_sketch(unsigned lg_k) {
   return std::unique_ptr<OpaqueHLLSketch>(new OpaqueHLLSketch { lg_k });

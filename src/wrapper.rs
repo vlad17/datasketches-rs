@@ -7,10 +7,10 @@
 
 mod cpc;
 pub(crate) mod hh;
-mod theta;
 mod hll;
+mod theta;
 
 pub use cpc::{CpcSketch, CpcUnion};
 pub use hh::HhSketch;
-pub use hll::{HLLSketch};
+pub use hll::HLLSketch;
 pub use theta::{StaticThetaSketch, ThetaIntersection, ThetaSketch, ThetaUnion};
