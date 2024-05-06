@@ -428,7 +428,7 @@ mod tests {
 
     #[test]
     fn hh_equally_dup_lines() {
-        // TODO: figure out the different between macOS binutils
+        // TODO: Figure out the difference between macOS binutils
         #[cfg(target_os = "macos")] {
             return;
         }
@@ -438,7 +438,7 @@ mod tests {
 
     #[test]
     fn hh_count_empty() {
-        // TODO: figure out the different between macOS binutils
+        // TODO: Figure out the difference between macOS binutils
         #[cfg(target_os = "macos")] {
             return;
         }
