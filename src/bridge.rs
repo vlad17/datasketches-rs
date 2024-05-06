@@ -36,6 +36,13 @@ pub(crate) mod ffi {
         pub(crate) fn sketch(self: &OpaqueCpcUnion) -> UniquePtr<OpaqueCpcSketch>;
         pub(crate) fn merge(self: Pin<&mut OpaqueCpcUnion>, to_add: UniquePtr<OpaqueCpcSketch>);
 
+        include!("dsrs/datasketches-cpp/hll.hpp");
+
+        pub(crate) type OpaqueHLLSketch;
+        pub(crate) fn estimate(self: &OpaqueHLLSketch) -> f64;
+
+        pub(crate) fn new_opaque_hll_sketch(lg_k: u32) -> UniquePtr<OpaqueHLLSketch>;
+
         include!("dsrs/datasketches-cpp/theta.hpp");
 
         pub(crate) type OpaqueThetaSketch;

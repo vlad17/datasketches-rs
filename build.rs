@@ -9,6 +9,7 @@ fn main() {
     bridge
         .files(&[
             datasketches.join("cpc.cpp"),
+            datasketches.join("hll.cpp"),
             datasketches.join("theta.cpp"),
             datasketches.join("hh.cpp"),
         ])
