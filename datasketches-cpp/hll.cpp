@@ -8,8 +8,8 @@
 
 #include "hll.hpp"
 
-OpaqueHLLSketch::OpaqueHLLSketch(unsigned lg_k):
-  inner_{ datasketches::hll_sketch(lg_k) } {
+OpaqueHLLSketch::OpaqueHLLSketch(unsigned lg_k, datasketches::target_hll_type tgt_type):
+  inner_{ datasketches::hll_sketch(lg_k, tgt_type) } {
 }
 
 OpaqueHLLSketch::OpaqueHLLSketch(datasketches::hll_sketch&& hll):
@@ -48,8 +48,8 @@ std::unique_ptr<std::vector<uint8_t>> OpaqueHLLSketch::serialize() const {
   return std::unique_ptr<std::vector<uint8_t>>(new std::vector<uint8_t>(std::move(v)));
 }
 
-std::unique_ptr<OpaqueHLLSketch> new_opaque_hll_sketch(unsigned lg_k) {
-  return std::unique_ptr<OpaqueHLLSketch>(new OpaqueHLLSketch { lg_k });
+std::unique_ptr<OpaqueHLLSketch> new_opaque_hll_sketch(unsigned lg_k, datasketches::target_hll_type tgt_type) {
+  return std::unique_ptr<OpaqueHLLSketch>(new OpaqueHLLSketch { lg_k, tgt_type });
 }
 
 std::unique_ptr<OpaqueHLLSketch> deserialize_opaque_hll_sketch(rust::Slice<const uint8_t> buf) {

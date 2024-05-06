@@ -53,7 +53,10 @@ pub(crate) mod ffi {
         pub(crate) fn update_u64(self: Pin<&mut OpaqueHLLSketch>, value: u64);
         pub(crate) fn serialize(self: &OpaqueHLLSketch) -> UniquePtr<CxxVector<u8>>;
 
-        pub(crate) fn new_opaque_hll_sketch(lg_k: u32) -> UniquePtr<OpaqueHLLSketch>;
+        pub(crate) fn new_opaque_hll_sketch(
+            lg_k: u32,
+            tgt_type: target_hll_type,
+        ) -> UniquePtr<OpaqueHLLSketch>;
         pub(crate) fn deserialize_opaque_hll_sketch(buf: &[u8]) -> UniquePtr<OpaqueHLLSketch>;
 
         pub(crate) type OpaqueHLLUnion;

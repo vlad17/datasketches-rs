@@ -4,6 +4,9 @@ use cxx;
 
 use crate::bridge::ffi;
 
+/// Specifies the target type of HLL sketch to be created. It is a target in that the actual
+/// allocation of the HLL array is deferred until sufficient number of items have been received by
+/// the warm-up phases.
 pub type HLLType = ffi::target_hll_type;
 
 /// The [HyperLogLog][orig-docs] (HLL) sketch. Under hood implementation is based on
@@ -22,9 +25,9 @@ pub struct HLLSketch {
 
 impl HLLSketch {
     /// Create a HH sketch representing the empty set.
-    pub fn new(lg2_k: u32) -> Self {
+    pub fn new(lg2_k: u32, tgt_type: HLLType) -> Self {
         Self {
-            inner: ffi::new_opaque_hll_sketch(lg2_k),
+            inner: ffi::new_opaque_hll_sketch(lg2_k, tgt_type),
         }
     }
 
@@ -114,7 +117,7 @@ mod tests {
 
     #[test]
     fn hll_empty() {
-        let cpc = HLLSketch::new(12);
+        let cpc = HLLSketch::new(12, HLLType::HLL_4);
         assert_eq!(cpc.estimate(), 0.0);
         check_cycle(&cpc);
     }
@@ -123,7 +126,7 @@ mod tests {
     fn hll_basic_count_distinct() {
         let mut slice = [0u64];
         let n = 100 * 1000;
-        let mut hll = HLLSketch::new(12);
+        let mut hll = HLLSketch::new(12, HLLType::HLL_4);
         for _ in 0..10 {
             for key in 0u64..n {
                 slice[0] = key;
@@ -141,7 +144,7 @@ mod tests {
 
     #[test]
     fn hll_simple_test() {
-        let mut hh = HLLSketch::new(12);
+        let mut hh = HLLSketch::new(12, HLLType::HLL_4);
         assert_eq!(hh.estimate(), 0.0);
 
         hh.update_u64(1);
@@ -162,7 +165,7 @@ mod tests {
 
         let mut union = HLLUnion::new(12);
         union.merge(hll);
-        union.merge(HLLSketch::new(12));
+        union.merge(HLLSketch::new(12, HLLType::HLL_4));
         let cpc = union.sketch(HLLType::HLL_4);
         assert_eq!(cpc.estimate(), 0.0);
     }
@@ -173,7 +176,7 @@ mod tests {
         let n = 100 * 1000;
         let mut union = HLLUnion::new(12);
         for _ in 0..10 {
-            let mut hll = HLLSketch::new(12);
+            let mut hll = HLLSketch::new(12, HLLType::HLL_4);
             for key in 0u64..n {
                 slice[0] = key;
                 hll.update(slice.as_byte_slice());
@@ -196,7 +199,7 @@ mod tests {
         let mut union = HLLUnion::new(12);
         let nrepeats = 6;
         for i in 0..10 {
-            let mut hll = HLLSketch::new(12);
+            let mut hll = HLLSketch::new(12, HLLType::HLL_4);
             for key in 0u64..n {
                 slice[0] = key + (i % nrepeats) * n;
                 hll.update(slice.as_byte_slice());
