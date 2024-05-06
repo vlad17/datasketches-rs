@@ -2,9 +2,11 @@
 
 mod bridge;
 pub mod counters;
+mod error;
 pub mod stream_reducer;
 mod wrapper;
 
+pub use error::DataSketchesError;
 pub use wrapper::CpcSketch;
 pub use wrapper::CpcUnion;
 pub use wrapper::HhSketch;
