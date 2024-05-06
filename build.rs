@@ -14,7 +14,7 @@ fn main() {
         ])
         .include(datasketches.join("common").join("include"))
         .flag_if_supported("-std=c++11")
-        .cpp_link_stdlib("stdc++")
+        .cpp_link_stdlib(None)
         .static_flag(true)
         .compile("libdatasketches.a");
 }
