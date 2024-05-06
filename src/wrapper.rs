@@ -12,5 +12,5 @@ mod theta;
 
 pub use cpc::{CpcSketch, CpcUnion};
 pub use hh::HhSketch;
-pub use hll::HLLSketch;
+pub use hll::{HLLSketch, HLLUnion};
 pub use theta::{StaticThetaSketch, ThetaIntersection, ThetaSketch, ThetaUnion};

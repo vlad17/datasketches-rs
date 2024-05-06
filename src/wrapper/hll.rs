@@ -2,13 +2,21 @@
 
 use std::borrow::Borrow;
 use std::hash::{Hash, Hasher};
-use std::ptr::NonNull;
-use std::slice;
 
 use cxx;
 
 use crate::bridge::ffi;
 
+/// The [HyperLogLog][orig-docs] (HLL) sketch. Under hood implementation is based on
+/// Phillipe Flajolet’s HyperLogLog (HLL) sketch but with significantly improved error behavior
+/// and excellent speed performance.
+///
+/// To give you a sense of HLL performance, the [linked benchmarks][benches]
+///
+/// This sketch supports merging through an intermediate type, [`HLLUnion`].
+///
+/// [orig-docs]: https://datasketches.apache.org/docs/HLL/HLL.html
+/// [benches]: https://datasketches.apache.org/docs/HLL/HllPerformance.html
 pub struct HLLSketch {
     inner: cxx::UniquePtr<ffi::OpaqueHLLSketch>,
 }
@@ -61,23 +69,36 @@ impl HLLSketch {
     }
 }
 
-// impl Clone for HLLSketch {
-//     fn clone(&self) -> Self {
-//         let mut hh = Self::new(self.lg2_k);
-//         hh.merge(self);
-//         hh
-//     }
-// }
+pub struct HLLUnion {
+    inner: cxx::UniquePtr<ffi::OpaqueHLLUnion>,
+}
+
+impl HLLUnion {
+    /// Create a HLL union over nothing with the given maximum log2 of k, which corresponds to the
+    /// empty set.
+    ///
+    /// @param lg_max_k The maximum size, in log2, of k. The value must
+    ///  be between 7 and 21, inclusive.
+    pub fn new(lg_max_k: u8) -> Self {
+        Self {
+            inner: ffi::new_opaque_hll_union(lg_max_k),
+        }
+    }
+
+    pub fn merge(&mut self, sketch: HLLSketch) {
+        self.inner.pin_mut().merge(sketch.inner)
+    }
+
+    /// Retrieve the current unioned sketch as a copy.
+    pub fn sketch(&self) -> HLLSketch {
+        HLLSketch {
+            inner: self.inner.sketch(),
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
-    use bstr::ByteSlice;
-    use std::collections::HashMap;
-    use std::iter;
-
-    use crate::CpcSketch;
-    use byte_slice_cast::{AsByteSlice, AsSliceOf};
-
     use super::*;
 
     fn check_cycle(s: &HLLSketch) {
@@ -112,6 +133,18 @@ mod tests {
         assert_eq!(hh.estimate(), 5.000000049670538);
 
         println!("{:?}", hh.estimate());
+    }
+
+    #[test]
+    fn hll_union_empty() {
+        let hll = HLLUnion::new(12).sketch();
+        assert_eq!(hll.estimate(), 0.0);
+
+        let mut union = HLLUnion::new(12);
+        union.merge(hll);
+        union.merge(HLLSketch::new(12));
+        let cpc = union.sketch();
+        assert_eq!(cpc.estimate(), 0.0);
     }
 
     #[test]

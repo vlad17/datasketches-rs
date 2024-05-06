@@ -47,6 +47,12 @@ pub(crate) mod ffi {
         pub(crate) fn new_opaque_hll_sketch(lg_k: u32) -> UniquePtr<OpaqueHLLSketch>;
         pub(crate) fn deserialize_opaque_hll_sketch(buf: &[u8]) -> UniquePtr<OpaqueHLLSketch>;
 
+        pub(crate) type OpaqueHLLUnion;
+
+        pub(crate) fn new_opaque_hll_union(lg_max_k: u8) -> UniquePtr<OpaqueHLLUnion>;
+        pub(crate) fn sketch(self: &OpaqueHLLUnion) -> UniquePtr<OpaqueHLLSketch>;
+        pub(crate) fn merge(self: Pin<&mut OpaqueHLLUnion>, to_add: UniquePtr<OpaqueHLLSketch>);
+
         include!("dsrs/datasketches-cpp/theta.hpp");
 
         pub(crate) type OpaqueThetaSketch;
