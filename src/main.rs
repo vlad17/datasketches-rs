@@ -229,7 +229,8 @@ mod tests {
     }
 
     fn fix_cmd_os(cmd: &str) -> String {
-        #[cfg(target_os = "macos")] {
+        #[cfg(target_os = "macos")]
+        {
             // macOS has own utils, which works different in a lot of places
             let cmd = cmd.replace("uniq -w1", "guniq -w1");
             let cmd = cmd.replace("wc -l", "gwc -l");
@@ -429,7 +430,8 @@ mod tests {
     #[test]
     fn hh_equally_dup_lines() {
         // TODO: Figure out the difference between macOS binutils
-        #[cfg(target_os = "macos")] {
+        #[cfg(target_os = "macos")]
+        {
             return;
         }
 
@@ -439,7 +441,8 @@ mod tests {
     #[test]
     fn hh_count_empty() {
         // TODO: Figure out the difference between macOS binutils
-        #[cfg(target_os = "macos")] {
+        #[cfg(target_os = "macos")]
+        {
             return;
         }
 
