@@ -40,8 +40,11 @@ pub(crate) mod ffi {
 
         pub(crate) type OpaqueHLLSketch;
         pub(crate) fn estimate(self: &OpaqueHLLSketch) -> f64;
+        pub(crate) fn update(self: Pin<&mut OpaqueHLLSketch>, buf: &[u8]);
+        pub(crate) fn update_u64(self: Pin<&mut OpaqueHLLSketch>, value: u64);
 
         pub(crate) fn new_opaque_hll_sketch(lg_k: u32) -> UniquePtr<OpaqueHLLSketch>;
+        pub(crate) fn deserialize_opaque_hll_sketch(buf: &[u8]) -> UniquePtr<OpaqueHLLSketch>;
 
         include!("dsrs/datasketches-cpp/theta.hpp");
 

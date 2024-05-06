@@ -3,7 +3,6 @@
 use std::ptr::NonNull;
 use std::slice;
 use std::borrow::Borrow;
-use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 
 use cxx;
@@ -26,6 +25,21 @@ impl HLLSketch {
     pub fn estimate(&self) -> f64 {
         self.inner.estimate()
     }
+
+    /// Observe a new value. Two values must have the exact same
+    /// bytes and lengths to be considered equal.
+    pub fn update(&mut self, value: &[u8]) {
+        self.inner.pin_mut().update(value)
+    }
+
+    /// Observe a new `u64`. If the native-endian byte ordered bytes
+    /// are equal to any other value seen by `update()`, this will be considered
+    /// equal. If you are intending to use serialized sketches across
+    /// platforms with different endianness, make sure to convert this
+    /// `value` to network order first.
+    pub fn update_u64(&mut self, value: u64) {
+        self.inner.pin_mut().update_u64(value)
+    }
 }
 
 // impl Clone for HLLSketch {
@@ -47,7 +61,17 @@ mod tests {
 
     #[test]
     fn hll_empty() {
-        let hh = HLLSketch::new(12);
+        let mut hh = HLLSketch::new(12);
+        assert_eq!(hh.estimate(), 0.0);
+
+        hh.update_u64(1);
+        hh.update_u64(2);
+        hh.update_u64(3);
+        hh.update_u64(4);
+        hh.update_u64(5);
+
+        assert_eq!(hh.estimate(), 5.000000049670538);
+
         println!("{:?}", hh.estimate());
     }
 }

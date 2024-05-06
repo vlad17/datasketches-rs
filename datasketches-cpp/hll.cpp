@@ -12,6 +12,10 @@ OpaqueHLLSketch::OpaqueHLLSketch(unsigned lg_k):
   inner_{ datasketches::hll_sketch(lg_k) } {
 }
 
+OpaqueHLLSketch::OpaqueHLLSketch(std::istream& is):
+  inner_{datasketches::hll_sketch::deserialize(is)} {
+}
+
 double OpaqueHLLSketch::estimate() const {
   return this->inner_.get_estimate();
 }
@@ -42,4 +46,12 @@ void OpaqueHLLSketch::update_u64(uint64_t value) {
 
 std::unique_ptr<OpaqueHLLSketch> new_opaque_hll_sketch(unsigned lg_k) {
   return std::unique_ptr<OpaqueHLLSketch>(new OpaqueHLLSketch { lg_k });
+}
+
+std::unique_ptr<OpaqueHLLSketch> deserialize_opaque_hll_sketch(rust::Slice<const uint8_t> buf) {
+    // TODO: could use a custom streambuf to avoid the slice -> stream copy
+    std::stringstream s{};
+    s.write(const_cast<char*>(reinterpret_cast<const char*>(buf.data())), std::streamsize(buf.size()));
+    s.seekg(0, std::ios::beg);
+    return std::unique_ptr<OpaqueHLLSketch>(new OpaqueHLLSketch{s});
 }
