@@ -150,29 +150,30 @@ impl KeyedMerger {
 
 pub struct HeavyHitter {
     sketch: HhSketch,
-    k: u64
+    k: u64,
 }
 
 // https://users.rust-lang.org/t/logarithm-of-integers/8506/5
 
 fn log2_floor(x: u64) -> usize {
-    const fn num_bits<T>() -> usize { std::mem::size_of::<T>() * 8 }
+    const fn num_bits<T>() -> usize {
+        std::mem::size_of::<T>() * 8
+    }
     assert!(x > 0);
     num_bits::<u64>() - x.leading_zeros() as usize - 1
 }
 
 impl HeavyHitter {
-
     /// Creates a new heavy hitter sketch targeting elements in the top-k
     /// by reserving O(k) space.
-    pub fn new( k: u64) -> Self {
+    pub fn new(k: u64) -> Self {
         let lg2_k_with_room = log2_floor(k as u64).max(1) + 2;
         Self {
             sketch: HhSketch::new(lg2_k_with_room.try_into().unwrap()),
-            k
+            k,
         }
     }
-    
+
     /// Serializes to base64 string with no newlines or `=` padding.
     pub fn serialize(&self) -> String {
         unimplemented!()
@@ -187,8 +188,7 @@ impl HeavyHitter {
     pub fn estimate(&self) -> impl Iterator<Item = (&[u8], u64)> {
         let mut v = self.sketch.estimate_no_fn();
         v.sort_by_key(|row| row.ub);
-        v
-            .into_iter()
+        v.into_iter()
             .rev()
             .take(self.k as usize)
             .map(|row| (row.key, row.ub))

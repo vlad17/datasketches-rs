@@ -18,6 +18,13 @@ pub(crate) mod ffi {
         unsafe fn remove_from_hashset(hashset_addr: usize, addr: usize);
     }
 
+    #[repr(i32)]
+    enum target_hll_type {
+        HLL_4,
+        HLL_6,
+        HLL_8,
+    }
+
     unsafe extern "C++" {
         include!("dsrs/datasketches-cpp/cpc.hpp");
 
@@ -35,6 +42,31 @@ pub(crate) mod ffi {
         pub(crate) fn new_opaque_cpc_union() -> UniquePtr<OpaqueCpcUnion>;
         pub(crate) fn sketch(self: &OpaqueCpcUnion) -> UniquePtr<OpaqueCpcSketch>;
         pub(crate) fn merge(self: Pin<&mut OpaqueCpcUnion>, to_add: UniquePtr<OpaqueCpcSketch>);
+
+        include!("dsrs/datasketches-cpp/hll.hpp");
+
+        type target_hll_type;
+
+        pub(crate) type OpaqueHLLSketch;
+        pub(crate) fn estimate(self: &OpaqueHLLSketch) -> f64;
+        pub(crate) fn update(self: Pin<&mut OpaqueHLLSketch>, buf: &[u8]);
+        pub(crate) fn update_u64(self: Pin<&mut OpaqueHLLSketch>, value: u64);
+        pub(crate) fn serialize(self: &OpaqueHLLSketch) -> UniquePtr<CxxVector<u8>>;
+
+        pub(crate) fn new_opaque_hll_sketch(
+            lg_k: u32,
+            tgt_type: target_hll_type,
+        ) -> UniquePtr<OpaqueHLLSketch>;
+        pub(crate) fn deserialize_opaque_hll_sketch(buf: &[u8]) -> UniquePtr<OpaqueHLLSketch>;
+
+        pub(crate) type OpaqueHLLUnion;
+
+        pub(crate) fn new_opaque_hll_union(lg_max_k: u8) -> UniquePtr<OpaqueHLLUnion>;
+        pub(crate) fn sketch(
+            self: &OpaqueHLLUnion,
+            tgt_type: target_hll_type,
+        ) -> UniquePtr<OpaqueHLLSketch>;
+        pub(crate) fn merge(self: Pin<&mut OpaqueHLLUnion>, to_add: UniquePtr<OpaqueHLLSketch>);
 
         include!("dsrs/datasketches-cpp/theta.hpp");
 
@@ -81,16 +113,17 @@ pub(crate) mod ffi {
 
         pub(crate) type OpaqueHhSketch;
 
-        pub(crate) fn new_opaque_hh_sketch(lg2_k: u8, hashset_addr: usize) -> UniquePtr<OpaqueHhSketch>;
+        pub(crate) fn new_opaque_hh_sketch(
+            lg2_k: u8,
+            hashset_addr: usize,
+        ) -> UniquePtr<OpaqueHhSketch>;
         pub(crate) fn estimate_no_fp(
             self: &OpaqueHhSketch,
         ) -> UniquePtr<CxxVector<ThinHeavyHitterRow>>;
         pub(crate) fn estimate_no_fn(
             self: &OpaqueHhSketch,
         ) -> UniquePtr<CxxVector<ThinHeavyHitterRow>>;
-        pub(crate) fn state(
-            self: &OpaqueHhSketch,
-        ) -> UniquePtr<CxxVector<ThinHeavyHitterRow>>;
+        pub(crate) fn state(self: &OpaqueHhSketch) -> UniquePtr<CxxVector<ThinHeavyHitterRow>>;
         pub(crate) fn update(self: Pin<&mut OpaqueHhSketch>, value: usize, weight: u64);
         pub(crate) fn set_weights(self: Pin<&mut OpaqueHhSketch>, total_weight: u64, weight: u64);
         pub(crate) fn get_total_weight(self: &OpaqueHhSketch) -> u64;

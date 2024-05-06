@@ -141,14 +141,13 @@ fn main() {
         assert!(!opt.raw, "--raw and --hh cannot be set simultaneously");
         assert!(!opt.merge, "--merge and --hh cannot be set simultaneously");
         if k == 0 {
-            return
+            return;
         }
-        let reduced =
-            reduce_stream(io::stdin().lock(), HeavyHitter::new(k)).expect("no io error");
+        let reduced = reduce_stream(io::stdin().lock(), HeavyHitter::new(k)).expect("no io error");
         for (line, count) in reduced.estimate() {
             println!("{} {}", count, str::from_utf8(line).expect("valid UTF-8"));
         }
-        return
+        return;
     }
 
     match (opt.key, opt.merge) {
@@ -221,10 +220,12 @@ mod tests {
             .success()
             .get_output()
             .clone();
-        assert!(out.stderr.is_empty(), "stderr {}",
-                str::from_utf8(&out.stderr).expect("valid UTF-8"));
-        out
-            .stdout
+        assert!(
+            out.stderr.is_empty(),
+            "stderr {}",
+            str::from_utf8(&out.stderr).expect("valid UTF-8")
+        );
+        out.stdout
     }
 
     fn eval_bash(cmd: &str) -> Vec<u8> {
@@ -233,8 +234,11 @@ mod tests {
             .arg(cmd)
             .output()
             .expect("datagen process successful");
-        assert!(out.stderr.is_empty(), "{}",
-                str::from_utf8(&out.stderr).unwrap());
+        assert!(
+            out.stderr.is_empty(),
+            "{}",
+            str::from_utf8(&out.stderr).unwrap()
+        );
         out.stdout
     }
 
@@ -392,14 +396,17 @@ mod tests {
     }
 
     fn unix_hh(k: usize) -> String {
-        format!("sort | uniq -c | sort -rn | head -{} | sed 's/^ *//' | sort", k)
+        format!(
+            "sort | uniq -c | sort -rn | head -{} | sed 's/^ *//' | sort",
+            k
+        )
     }
 
     fn validate_unix_hh(datagen: &str, k: usize) {
         let unix = unix_hh(k);
         let kstr = format!("{}", k);
         let dsrs = &["--hh", &kstr];
-        validate_equal_cmd(datagen, dsrs, &unix);        
+        validate_equal_cmd(datagen, dsrs, &unix);
     }
 
     #[test]
