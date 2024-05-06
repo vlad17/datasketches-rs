@@ -1,0 +1,29 @@
+name: Build
+on:
+  - push
+  - pull_request
+
+
+jobs:
+  debian_x86:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - name: Run cargo build
+        run: cargo build
+      - name: Run cargo test
+        run: cargo test
+  macos_x86:
+    runs-on: macos-12
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - name: Run cargo build
+        run: cargo build
+      - name: Run cargo test
+        run: cargo test
