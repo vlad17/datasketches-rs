@@ -40,6 +40,15 @@ impl HLLSketch {
     pub fn update_u64(&mut self, value: u64) {
         self.inner.pin_mut().update_u64(value)
     }
+
+    pub fn deserialize(buf: &[u8]) -> Self {
+        // TODO: this could be friendlier, it currently terminates
+        // the program no bad deserialization, and instead can be a
+        // Result.
+        Self {
+            inner: ffi::deserialize_opaque_hll_sketch(buf),
+        }
+    }
 }
 
 // impl Clone for HLLSketch {
@@ -54,13 +63,14 @@ impl HLLSketch {
 mod tests {
     use std::collections::HashMap;
     use std::iter;
+    use bstr::ByteSlice;
 
     use byte_slice_cast::{AsByteSlice, AsSliceOf};
 
     use super::*;
 
     #[test]
-    fn hll_empty() {
+    fn hll_simple_test() {
         let mut hh = HLLSketch::new(12);
         assert_eq!(hh.estimate(), 0.0);
 
@@ -73,5 +83,13 @@ mod tests {
         assert_eq!(hh.estimate(), 5.000000049670538);
 
         println!("{:?}", hh.estimate());
+    }
+
+    #[test]
+    fn hll_deserialize_databricks() {
+        let bytes = base64::decode_config("AgEHDAMABAgr8vsGdYFmB4Yv+Q2BvF0GAAAAAAAAAAAAAAAAAAAAAA==", base64::STANDARD_NO_PAD).unwrap();
+        let hh = HLLSketch::deserialize(&bytes);
+
+        assert_eq!(hh.estimate(), 4.000000029802323);
     }
 }
