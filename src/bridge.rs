@@ -24,7 +24,7 @@ pub(crate) mod ffi {
         pub(crate) type OpaqueCpcSketch;
 
         pub(crate) fn new_opaque_cpc_sketch() -> UniquePtr<OpaqueCpcSketch>;
-        pub(crate) fn deserialize_opaque_cpc_sketch(buf: &[u8]) -> UniquePtr<OpaqueCpcSketch>;
+        pub(crate) fn deserialize_opaque_cpc_sketch(buf: &[u8]) -> Result<UniquePtr<OpaqueCpcSketch>>;
         pub(crate) fn estimate(self: &OpaqueCpcSketch) -> f64;
         pub(crate) fn update(self: Pin<&mut OpaqueCpcSketch>, buf: &[u8]);
         pub(crate) fn update_u64(self: Pin<&mut OpaqueCpcSketch>, value: u64);
@@ -57,7 +57,7 @@ pub(crate) mod ffi {
         pub(crate) fn serialize(self: &OpaqueStaticThetaSketch) -> UniquePtr<CxxVector<u8>>;
         pub(crate) fn deserialize_opaque_static_theta_sketch(
             buf: &[u8],
-        ) -> UniquePtr<OpaqueStaticThetaSketch>;
+        ) -> Result<UniquePtr<OpaqueStaticThetaSketch>>;
 
         pub(crate) type OpaqueThetaUnion;
 

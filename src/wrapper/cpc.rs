@@ -3,6 +3,7 @@
 use cxx;
 
 use crate::bridge::ffi;
+use crate::DataSketchesError;
 
 /// The [Compressed Probability Counting][orig-docs] (CPC) sketch is
 /// a dynamically resizing (but still bounded-size) distinct count sketch.
@@ -63,13 +64,10 @@ impl CpcSketch {
         UPtrVec(self.inner.serialize())
     }
 
-    pub fn deserialize(buf: &[u8]) -> Self {
-        // TODO: this could be friendlier, it currently terminates
-        // the program no bad deserialization, and instead can be a
-        // Result.
-        Self {
-            inner: ffi::deserialize_opaque_cpc_sketch(buf),
-        }
+    pub fn deserialize(buf: &[u8]) -> Result<Self, DataSketchesError> {
+        Ok(Self {
+            inner: ffi::deserialize_opaque_cpc_sketch(buf)?,
+        })
     }
 }
 
@@ -107,9 +105,9 @@ mod tests {
     fn check_cycle(s: &CpcSketch) {
         let est = s.estimate();
         let bytes = s.serialize();
-        let cpy = CpcSketch::deserialize(bytes.as_ref());
-        let cpy2 = CpcSketch::deserialize(bytes.as_ref());
-        let cpy3 = CpcSketch::deserialize(bytes.as_ref());
+        let cpy = CpcSketch::deserialize(bytes.as_ref()).unwrap();
+        let cpy2 = CpcSketch::deserialize(bytes.as_ref()).unwrap();
+        let cpy3 = CpcSketch::deserialize(bytes.as_ref()).unwrap();
         assert_eq!(est, cpy.estimate());
         assert_eq!(est, cpy2.estimate());
         assert_eq!(est, cpy3.estimate());
@@ -196,5 +194,10 @@ mod tests {
             let ub = (n * nrepeats.min(i + 1)) as f64 * 1.05;
             assert!((lb..ub).contains(&est));
         }
+    }
+
+    #[test]
+    fn cpc_deserialization_error() {
+        assert!(matches!(CpcSketch::deserialize(&[9, 9, 9, 9]), Err(DataSketchesError::CXXError(_))));
     }
 }

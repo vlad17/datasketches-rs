@@ -10,7 +10,7 @@ use base64;
 use memchr;
 
 use crate::stream_reducer::LineReducer;
-use crate::{CpcSketch, CpcUnion, HhSketch};
+use crate::{CpcSketch, CpcUnion, DataSketchesError, HhSketch};
 
 pub struct Counter {
     sketch: CpcSketch,
@@ -32,9 +32,9 @@ impl Counter {
     }
 
     /// Deserializes from base64 string with no newlines or `=` padding.
-    pub fn deserialize(s: &str) -> Result<Self, base64::DecodeError> {
+    pub fn deserialize(s: &str) -> Result<Self, DataSketchesError> {
         let bytes = base64::decode_config(s, base64::STANDARD_NO_PAD)?;
-        let sketch = CpcSketch::deserialize(bytes.as_ref());
+        let sketch = CpcSketch::deserialize(bytes.as_ref())?;
         Ok(Self { sketch })
     }
 

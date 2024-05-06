@@ -3,6 +3,7 @@
 use cxx;
 
 use crate::bridge::ffi;
+use crate::DataSketchesError;
 
 /// The [Theta][orig-docs] sketch is, essentially, an adaptive random sample
 /// of a stream. As a result, it can be used to estimate distinct counts and
@@ -85,13 +86,10 @@ impl StaticThetaSketch {
         UPtrVec(self.inner.serialize())
     }
 
-    pub fn deserialize(buf: &[u8]) -> Self {
-        // TODO: this could be friendlier, it currently terminates
-        // the program no bad deserialization, and instead can be a
-        // Result.
-        Self {
-            inner: ffi::deserialize_opaque_static_theta_sketch(buf),
-        }
+    pub fn deserialize(buf: &[u8]) -> Result<Self, DataSketchesError> {
+        Ok(Self {
+            inner: ffi::deserialize_opaque_static_theta_sketch(buf)?,
+        })
     }
 }
 
@@ -174,9 +172,9 @@ mod tests {
         let ub = est * 1.05;
 
         let bytes = s.serialize();
-        let cpy = StaticThetaSketch::deserialize(bytes.as_ref());
-        let cpy2 = StaticThetaSketch::deserialize(bytes.as_ref());
-        let cpy3 = StaticThetaSketch::deserialize(bytes.as_ref());
+        let cpy = StaticThetaSketch::deserialize(bytes.as_ref()).unwrap();
+        let cpy2 = StaticThetaSketch::deserialize(bytes.as_ref()).unwrap();
+        let cpy3 = StaticThetaSketch::deserialize(bytes.as_ref()).unwrap();
         assert_eq!(est, cpy.estimate());
         assert_eq!(est, cpy2.estimate());
         assert_eq!(est, cpy3.estimate());
@@ -269,5 +267,10 @@ mod tests {
                 (value - est).abs() / value.abs()
             );
         }
+    }
+
+    #[test]
+    fn theta_static_deserialization_error() {
+        assert!(matches!(StaticThetaSketch::deserialize(&[9, 9, 9, 9]), Err(DataSketchesError::CXXError(_))));
     }
 }
