@@ -100,6 +100,8 @@ impl HLLUnion {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::CpcSketch;
+    use byte_slice_cast::AsByteSlice;
 
     fn check_cycle(s: &HLLSketch) {
         let est = s.estimate();
@@ -117,6 +119,26 @@ mod tests {
         let cpc = HLLSketch::new(12);
         assert_eq!(cpc.estimate(), 0.0);
         check_cycle(&cpc);
+    }
+
+    #[test]
+    fn hll_basic_count_distinct() {
+        let mut slice = [0u64];
+        let n = 100 * 1000;
+        let mut hll = HLLSketch::new(12);
+        for _ in 0..10 {
+            for key in 0u64..n {
+                slice[0] = key;
+                // updates should be equal
+                hll.update(slice.as_byte_slice());
+                hll.update_u64(key);
+            }
+            check_cycle(&hll);
+            let est = hll.estimate();
+            let lb = n as f64 * 0.95;
+            let ub = n as f64 * 1.05;
+            assert!((lb..ub).contains(&est));
+        }
     }
 
     #[test]
@@ -145,6 +167,51 @@ mod tests {
         union.merge(HLLSketch::new(12));
         let cpc = union.sketch();
         assert_eq!(cpc.estimate(), 0.0);
+    }
+
+    #[test]
+    fn hll_basic_union_overlap() {
+        let mut slice = [0u64];
+        let n = 100 * 1000;
+        let mut union = HLLUnion::new(12);
+        for _ in 0..10 {
+            let mut hll = HLLSketch::new(12);
+            for key in 0u64..n {
+                slice[0] = key;
+                hll.update(slice.as_byte_slice());
+                hll.update_u64(key);
+            }
+            union.merge(hll);
+            let merged = union.sketch();
+            let est = merged.estimate();
+            check_cycle(&merged);
+            let lb = n as f64 * 0.95;
+            let ub = n as f64 * 1.05;
+            assert!((lb..ub).contains(&est));
+        }
+    }
+
+    #[test]
+    fn hll_basic_union_distinct() {
+        let mut slice = [0u64];
+        let n = 100 * 1000;
+        let mut union = HLLUnion::new(12);
+        let nrepeats = 6;
+        for i in 0..10 {
+            let mut hll = HLLSketch::new(12);
+            for key in 0u64..n {
+                slice[0] = key + (i % nrepeats) * n;
+                hll.update(slice.as_byte_slice());
+                hll.update_u64(key);
+            }
+            union.merge(hll);
+            let merged = union.sketch();
+            let est = merged.estimate();
+            check_cycle(&merged);
+            let lb = (n * nrepeats.min(i + 1)) as f64 * 0.95;
+            let ub = (n * nrepeats.min(i + 1)) as f64 * 1.05;
+            assert!((lb..ub).contains(&est));
+        }
     }
 
     #[test]
