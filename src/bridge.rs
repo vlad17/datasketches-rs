@@ -98,5 +98,65 @@ pub(crate) mod ffi {
         pub(crate) fn set_weights(self: Pin<&mut OpaqueHhSketch>, total_weight: u64, weight: u64);
         pub(crate) fn get_total_weight(self: &OpaqueHhSketch) -> u64;
         pub(crate) fn get_offset(self: &OpaqueHhSketch) -> u64;
+
+        include!("dsrs/datasketches-cpp/kll.hpp");
+
+        // KLL Float Sketch
+        pub(crate) type OpaqueKllFloatSketch;
+
+        pub(crate) fn new_opaque_kll_float_sketch() -> UniquePtr<OpaqueKllFloatSketch>;
+        pub(crate) fn new_opaque_kll_float_sketch_with_k(k: u16) -> UniquePtr<OpaqueKllFloatSketch>;
+        pub(crate) fn deserialize_opaque_kll_float_sketch(
+            buf: &[u8],
+        ) -> Result<UniquePtr<OpaqueKllFloatSketch>>;
+        pub(crate) fn kll_float_update(self: Pin<&mut OpaqueKllFloatSketch>, value: f32);
+        pub(crate) fn kll_float_merge(self: Pin<&mut OpaqueKllFloatSketch>, other: &OpaqueKllFloatSketch);
+        pub(crate) fn is_empty(self: &OpaqueKllFloatSketch) -> bool;
+        pub(crate) fn get_k(self: &OpaqueKllFloatSketch) -> u16;
+        pub(crate) fn get_n(self: &OpaqueKllFloatSketch) -> u64;
+        pub(crate) fn get_num_retained(self: &OpaqueKllFloatSketch) -> u32;
+        pub(crate) fn is_estimation_mode(self: &OpaqueKllFloatSketch) -> bool;
+        pub(crate) fn get_min_value(self: &OpaqueKllFloatSketch) -> f32;
+        pub(crate) fn get_max_value(self: &OpaqueKllFloatSketch) -> f32;
+        pub(crate) fn get_quantile(self: &OpaqueKllFloatSketch, fraction: f64) -> f32;
+        pub(crate) fn get_quantiles(
+            self: &OpaqueKllFloatSketch,
+            fractions: &[f64],
+        ) -> UniquePtr<CxxVector<f32>>;
+        pub(crate) fn get_quantiles_evenly_spaced(
+            self: &OpaqueKllFloatSketch,
+            num: u32,
+        ) -> UniquePtr<CxxVector<f32>>;
+        pub(crate) fn get_rank(self: &OpaqueKllFloatSketch, value: f32) -> f64;
+        pub(crate) fn serialize(self: &OpaqueKllFloatSketch) -> UniquePtr<CxxVector<u8>>;
+
+        // KLL Double Sketch
+        pub(crate) type OpaqueKllDoubleSketch;
+
+        pub(crate) fn new_opaque_kll_double_sketch() -> UniquePtr<OpaqueKllDoubleSketch>;
+        pub(crate) fn new_opaque_kll_double_sketch_with_k(k: u16) -> UniquePtr<OpaqueKllDoubleSketch>;
+        pub(crate) fn deserialize_opaque_kll_double_sketch(
+            buf: &[u8],
+        ) -> Result<UniquePtr<OpaqueKllDoubleSketch>>;
+        pub(crate) fn kll_double_update(self: Pin<&mut OpaqueKllDoubleSketch>, value: f64);
+        pub(crate) fn kll_double_merge(self: Pin<&mut OpaqueKllDoubleSketch>, other: &OpaqueKllDoubleSketch);
+        pub(crate) fn is_empty(self: &OpaqueKllDoubleSketch) -> bool;
+        pub(crate) fn get_k(self: &OpaqueKllDoubleSketch) -> u16;
+        pub(crate) fn get_n(self: &OpaqueKllDoubleSketch) -> u64;
+        pub(crate) fn get_num_retained(self: &OpaqueKllDoubleSketch) -> u32;
+        pub(crate) fn is_estimation_mode(self: &OpaqueKllDoubleSketch) -> bool;
+        pub(crate) fn get_min_value(self: &OpaqueKllDoubleSketch) -> f64;
+        pub(crate) fn get_max_value(self: &OpaqueKllDoubleSketch) -> f64;
+        pub(crate) fn get_quantile(self: &OpaqueKllDoubleSketch, fraction: f64) -> f64;
+        pub(crate) fn get_quantiles(
+            self: &OpaqueKllDoubleSketch,
+            fractions: &[f64],
+        ) -> UniquePtr<CxxVector<f64>>;
+        pub(crate) fn get_quantiles_evenly_spaced(
+            self: &OpaqueKllDoubleSketch,
+            num: u32,
+        ) -> UniquePtr<CxxVector<f64>>;
+        pub(crate) fn get_rank(self: &OpaqueKllDoubleSketch, value: f64) -> f64;
+        pub(crate) fn serialize(self: &OpaqueKllDoubleSketch) -> UniquePtr<CxxVector<u8>>;
     }
 }
